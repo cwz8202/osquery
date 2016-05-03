@@ -110,4 +110,8 @@ ProcessState checkChildProcessStatus(osquery::PlatformProcess& process, int& sta
   status = exit_code;
   return PROCESS_EXITED;
 }
+
+void setToBackgroundPriority() {
+  // TODO(#1991): Look up SetPriorityClass and considering implementing it...
+}
 }

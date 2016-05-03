@@ -91,14 +91,14 @@ boost::optional<std::string> getEnvVar(const std::string& name);
 // TODO(#1991): Missing register signal handlers function. Consider using an abstraction layer for 
 //              conforming POSIX and Windows callback functions. We should consider using a lambda
 //              function for a more cleaner design.
-// void registerExitHandlers(<func-ptr-type>);
+// void registerExitHandlers(<func-ptr-type>); -- init.cpp:306
 
 // TODO(#1991): Missing waitpid functionality
 ProcessState checkChildProcessStatus(osquery::PlatformProcess& process, int& status);
 void cleanupDefunctProcesses();
 
 // TODO(#1991): Missing setpriority functionality
-// void setToBackgroundPriority();
+void setToBackgroundPriority();
 
 // TODO(#1991): System logging?
 }
