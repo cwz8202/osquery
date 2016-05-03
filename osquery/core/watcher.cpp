@@ -187,6 +187,30 @@ void WatcherRunner::start() {
 bool WatcherRunner::watch(pid_t child) {
   int status = 0;
 
+#if 0
+  ProcessState result = checkChildProcessStatus(child, status);
+  if (Watcher::fatesBound()) {
+    // A signal was handled while the watcher was watching.
+    return false;
+  }
+
+  if (!child.isValid() || result == PROCESS_ERROR) {
+    // Worker does not exist or never existed.
+    return false;
+  } else if (result == PROCESS_STILL_ALIVE) {
+    // If the inspect finds problems it will stop/restart the worker.
+    if (!isChildSane(child)) {
+      stopChild(child);
+      return false;
+    }
+    return true;
+  }
+
+  if (result == PROCESS_EXITED) {
+    // If the worker process existed, store the exit code.
+    Watcher::instance().worker_status_ = status;
+  }
+#endif
   // XXX TODO: Stubbed out for now
 #ifndef WIN32
   // TODO(#1991): We need to abstract the following
@@ -219,12 +243,17 @@ bool WatcherRunner::watch(pid_t child) {
 
 void WatcherRunner::stopChild(pid_t child) {
   // XXX TODO: Ignored for now
+
+#if 0
+  child.kill();
+#endif
+
 #ifndef WIN32
   // TODO(#1991): We need to abstract the following
   kill(child, SIGKILL);
 
   // Clean up the defunct (zombie) process.
-  waitpid(-1, 0, WNOHANG);
+  cleanupDefunctProcesses();
 #endif
 }
 

@@ -25,6 +25,13 @@ using PlatformPidType = pid_t;
 
 const PlatformPidType kInvalidPid = (PlatformPidType) -1;
 
+enum ProcessState {
+  PROCESS_ERROR           = -1,
+  PROCESS_STILL_ALIVE     =  0,
+  PROCESS_EXITED,
+  PROCESS_STATE_CHANGE
+};
+
 class PlatformProcess {
   public:
     PlatformProcess(PlatformPidType id);
@@ -87,8 +94,8 @@ boost::optional<std::string> getEnvVar(const std::string& name);
 // void registerExitHandlers(<func-ptr-type>);
 
 // TODO(#1991): Missing waitpid functionality
-// bool checkChildProcessStatus(osquery::PlatformProcess& process, int& status); -- watcher.cpp:193
-// void cleanupDefunctProcesses(); -- watcher.cpp:227
+ProcessState checkChildProcessStatus(osquery::PlatformProcess& process, int& status);
+void cleanupDefunctProcesses();
 
 // TODO(#1991): Missing setpriority functionality
 // void setToBackgroundPriority();

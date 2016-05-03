@@ -445,11 +445,7 @@ void Initializer::initWorker(const std::string& name) const {
 
   // Start a 'watcher watcher' thread to exit the process if the watcher exits.
   // In this case the parent process is called the 'watcher' process.
-#ifdef WIN32
-  // TODO: How will we deal with this?
-#else
   Dispatcher::addService(std::make_shared<WatcherWatcherRunner>(getLauncherProcess()));
-#endif
 }
 
 void Initializer::initWorkerWatcher(const std::string& name) const {
