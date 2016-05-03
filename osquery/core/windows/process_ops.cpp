@@ -94,4 +94,20 @@ boost::optional<std::string> getEnvVar(const std::string& name) {
   
   return std::string(&buf[0], value_len);
 }
+
+void cleanupDefunctProcesses() { }
+
+ProcessState checkChildProcessStatus(osquery::PlatformProcess& process, int& status) {
+  DWORD exit_code = 0;
+  if (!::GetExitCodeProcess(process.nativeHandle(), &exit_code)) {
+    return PROCESS_ERROR;
+  }
+
+  if (exit_code == STILL_ACTIVE) {
+    return PROCESS_STILL_ALIVE;
+  }
+
+  status = exit_code;
+  return PROCESS_EXITED;
+}
 }
