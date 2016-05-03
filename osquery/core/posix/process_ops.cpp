@@ -12,6 +12,11 @@
 #include <stdlib.h>
 #include <boost/optional.hpp>
 
+#include <sys/time.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <sys/resource.h>
+
 #include "osquery/core/process.h"
 
 namespace osquery {
@@ -75,5 +80,9 @@ ProcessState checkChildProcessStatus(osquery::PlatformProcess& process, int& sta
   
   // process's state has changed but the state isn't that which we expect!
   return PROCESS_STATE_CHANGE;
+}
+
+void setToBackgroundPriority() {
+  setpriority(PRIO_PGRP, 0, 10);
 }
 }

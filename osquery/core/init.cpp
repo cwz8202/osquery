@@ -326,11 +326,7 @@ Initializer::Initializer(int& argc, char**& argv, ToolType tool)
   initStatusLogger(binary_);
   if (tool != OSQUERY_EXTENSION) {
     if (isWorker()) {
-#ifdef WIN32
-      // TODO: watcher will not be guarranteed to be parent process
-#else
-      VLOG(1) << "osquery worker initialized [watcher=" << getppid() << "]";
-#endif
+      VLOG(1) << "osquery worker initialized [watcher=" << getLauncherProcess().pid() << "]";
     } else {
       VLOG(1) << "osquery initialized [version=" << kVersion << "]";
     }
@@ -378,11 +374,8 @@ void Initializer::initDaemon() const {
       FLAGS_watchdog_level >= WATCHDOG_LEVEL_DEFAULT &&
       FLAGS_watchdog_level != WATCHDOG_LEVEL_DEBUG) {
     // Set CPU scheduling I/O limits.
-#ifdef WIN32
-    // TODO: What is the equivalent for Windows?
-#else
-    setpriority(PRIO_PGRP, 0, 10);
-#endif
+    setToBackgroundPriority();
+
 #ifdef __linux__
     // Using: ioprio_set(IOPRIO_WHO_PGRP, 0, IOPRIO_CLASS_IDLE);
     syscall(SYS_ioprio_set, IOPRIO_WHO_PGRP, 0, IOPRIO_CLASS_IDLE);
@@ -484,11 +477,7 @@ void Initializer::initActivePlugin(const std::string& type,
     }
     // The plugin is not local and is not active, wait and retry.
     delay += kExtensionInitializeLatencyUS;
-#ifdef WIN32
-    Sleep(kExtensionInitializeLatencyUS);
-#else
-    ::usleep(kExtensionInitializeLatencyUS);
-#endif
+    processSleep(kExtensionInitializeLatencyUS);
   } while (delay < timeout);
 
   LOG(ERROR) << "Cannot activate " << name << " " << type
