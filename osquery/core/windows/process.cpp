@@ -12,6 +12,7 @@
 #include <sstream>
 #include <signal.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 
 #include "osquery/core/process.h"
 
