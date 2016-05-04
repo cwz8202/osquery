@@ -112,7 +112,7 @@ int extensionMain(int argc, char *argv[]) {
 int main(int argc, char* argv[]) {
   if (auto val = osquery::getEnvVar("OSQUERY_WORKER")) {
     return workerMain(argc, argv);
-  } else if ((val = osquery::getEnvVar("OSQUERY_EXTENSIONS"))) {
+  } else if ((val = osquery::getEnvVar("OSQUERY_EXTENSION"))) {
     return extensionMain(argc, argv);
   }
   self_exec_path = argv[0];
