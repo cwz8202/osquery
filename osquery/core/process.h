@@ -52,16 +52,6 @@ class PlatformProcess {
     
     bool isValid() const { return (id_ != kInvalidPid); }
 
-    // TODO(#1991): Before we can start substituting code blocks with our abstractions, we need to
-    //              decide on what to do for assignment operators. Integration requires some fields
-    //              in classes to be retyped as PlatformProcess. On the Windows side, we need to 
-    //              actually deal with resources such as HANDLEs. To prevent the leaking or premature
-    //              closing of HANDLEs, we need to decide upon the semantics.
-    //        
-    //              Ideally, I think the way to go about it is on assignment, copy to the new object
-    //              via duplication. This makes things decidably easier since after the operation,
-    //              both HANDLEs are usable.
-
     PlatformProcess& operator=(const PlatformProcess& process);
     bool operator==(const PlatformProcess& process) const;
     bool operator!=(const PlatformProcess& process) const;
@@ -84,22 +74,20 @@ PlatformProcess getLauncherProcess();
 
 void processSleep(unsigned int msec);
 
-bool isLauncherProcessDead(PlatformProcess& launcher);
 bool setEnvVar(const std::string& name, const std::string& value);
 bool unsetEnvVar(const std::string& name);
 boost::optional<std::string> getEnvVar(const std::string& name);
+
+bool isLauncherProcessDead(PlatformProcess& launcher);
+ProcessState checkChildProcessStatus(const osquery::PlatformProcess& process, int& status);
+void cleanupDefunctProcesses();
+
+void setToBackgroundPriority();
 
 // TODO(#1991): Missing register signal handlers function. Consider using an abstraction layer for 
 //              conforming POSIX and Windows callback functions. We should consider using a lambda
 //              function for a more cleaner design.
 // void registerExitHandlers(<func-ptr-type>); -- init.cpp:306
-
-// TODO(#1991): Missing waitpid functionality
-ProcessState checkChildProcessStatus(const osquery::PlatformProcess& process, int& status);
-void cleanupDefunctProcesses();
-
-// TODO(#1991): Missing setpriority functionality
-void setToBackgroundPriority();
 
 // TODO(#1991): System logging?
 }
