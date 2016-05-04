@@ -68,6 +68,7 @@ enum {
 };
 #endif
 
+// TODO(#2001): We need to decide upon a default OSQUERY_HOME for Windows
 #ifdef __linux__
 #define OSQUERY_HOME "/etc/osquery"
 #else
@@ -101,7 +102,8 @@ enum {
 namespace {
 extern "C" {
 static inline bool hasWorkerVariable() {
-  if (auto value = ::osquery::getEnvVar("OSQUERY_WORKER")) {
+  auto value = ::osquery::getEnvVar("OSQUERY_WORKER");
+  if (value) {
     return true;
   }
   return false;
