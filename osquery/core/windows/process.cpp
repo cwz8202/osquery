@@ -61,11 +61,11 @@ PlatformProcess& PlatformProcess::operator=(const PlatformProcess& process) {
   return *this;
 }
 
-bool PlatformProcess::operator==(const PlatformProcess& process) {
+bool PlatformProcess::operator==(const PlatformProcess& process) const {
   return (::GetProcessId(nativeHandle()) == ::GetProcessId(process.nativeHandle()));
 }
 
-bool PlatformProcess::operator!=(const PlatformProcess& process) {
+bool PlatformProcess::operator!=(const PlatformProcess& process) const {
   return (::GetProcessId(nativeHandle()) != ::GetProcessId(process.nativeHandle()));
 }
 
@@ -73,7 +73,7 @@ int PlatformProcess::pid() const {
   return ::GetProcessId(id_);
 }
 
-bool PlatformProcess::kill() {
+bool PlatformProcess::kill() const {
   if (id_ == kInvalidPid) {
     return false;
   }

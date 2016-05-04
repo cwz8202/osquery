@@ -43,7 +43,7 @@ int PlatformProcess::pid() const {
   return id_;
 }
 
-bool PlatformProcess::kill() {
+bool PlatformProcess::kill() const {
   if (id_ == kInvalidPid) {
     return false;
   }

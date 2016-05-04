@@ -74,7 +74,7 @@ void Watcher::resetExtensionCounters(const std::string& extension,
   state.last_respawn_time = respawn_time;
 }
 
-std::string Watcher::getExtensionPath(pid_t child) {
+std::string Watcher::getExtensionPath(const PlatformProcess& child) {
   for (const auto& extension : extensions()) {
     if (extension.second == child) {
       return extension.first;
@@ -89,7 +89,7 @@ void Watcher::removeExtensionPath(const std::string& extension) {
   instance().extension_states_.erase(extension);
 }
 
-PerformanceState& Watcher::getState(pid_t child) {
+PerformanceState& Watcher::getState(const PlatformProcess& child) {
   if (child == instance().worker_) {
     return instance().state_;
   } else {
@@ -101,12 +101,12 @@ PerformanceState& Watcher::getState(const std::string& extension) {
   return instance().extension_states_[extension];
 }
 
-void Watcher::setExtension(const std::string& extension, pid_t child) {
+void Watcher::setExtension(const std::string& extension, PlatformProcess& child) {
   WatcherLocker locker;
   instance().extensions_[extension] = child;
 }
 
-void Watcher::reset(pid_t child) {
+void Watcher::reset(const PlatformProcess& child) {
   if (child == instance().worker_) {
     instance().worker_ = 0;
     resetWorkerCounters(0);
@@ -116,14 +116,16 @@ void Watcher::reset(pid_t child) {
   // If it was not the worker pid then find the extension name to reset.
   for (const auto& extension : extensions()) {
     if (extension.second == child) {
-      setExtension(extension.first, 0);
+      // TODO(#1991): Why is pid_t set to 0?
+      setExtension(extension.first, PlatformProcess(kInvalidPid));
       resetExtensionCounters(extension.first, 0);
     }
   }
 }
 
 void Watcher::addExtensionPath(const std::string& path) {
-  setExtension(path, 0);
+  // TODO(#1991): Why is pid_t set to 0?
+  setExtension(path, PlatformProcess(kInvalidPid));
   resetExtensionCounters(path, 0);
 }
 
@@ -149,7 +151,7 @@ bool WatcherRunner::ok() {
     return false;
   }
   // Watcher is OK to run if a worker or at least one extension exists.
-  return (Watcher::getWorker() >= 0 || Watcher::hasManagedExtensions());
+  return (Watcher::getWorker().isValid() || Watcher::hasManagedExtensions());
 }
 
 void WatcherRunner::start() {
@@ -184,10 +186,9 @@ void WatcherRunner::start() {
   } while (!interrupted() && ok());
 }
 
-bool WatcherRunner::watch(pid_t child) {
+bool WatcherRunner::watch(const PlatformProcess& child) const {
   int status = 0;
 
-#if 0
   ProcessState result = checkChildProcessStatus(child, status);
   if (Watcher::fatesBound()) {
     // A signal was handled while the watcher was watching.
@@ -210,57 +211,19 @@ bool WatcherRunner::watch(pid_t child) {
     // If the worker process existed, store the exit code.
     Watcher::instance().worker_status_ = status;
   }
-#endif
-  // XXX TODO: Stubbed out for now
-#ifndef WIN32
-  // TODO(#1991): We need to abstract the following
-  pid_t result = waitpid(child, &status, WNOHANG);
-  if (Watcher::fatesBound()) {
-    // A signal was handled while the watcher was watching.
-    return false;
-  }
-
-  if (child == 0 || result < 0) {
-    // Worker does not exist or never existed.
-    return false;
-  } else if (result == 0) {
-    // If the inspect finds problems it will stop/restart the worker.
-    if (!isChildSane(child)) {
-      stopChild(child);
-      return false;
-    }
-    return true;
-  }
-
-  if (WIFEXITED(status)) {
-    // If the worker process existed, store the exit code.
-    Watcher::instance().worker_status_ = WEXITSTATUS(status);
-  }
-#endif
 
   return true;
 }
 
-void WatcherRunner::stopChild(pid_t child) {
-  // XXX TODO: Ignored for now
-
-#if 0
+void WatcherRunner::stopChild(const PlatformProcess& child) const {
   child.kill();
-#endif
-
-#ifndef WIN32
-  // TODO(#1991): We need to abstract the following
-  kill(child, SIGKILL);
 
   // Clean up the defunct (zombie) process.
   cleanupDefunctProcesses();
-#endif
 }
 
-bool WatcherRunner::isChildSane(pid_t child) {
-  // XXX TODO: Stubbed out...
-#ifndef WIN32
-  auto rows = SQL::selectAllFrom("processes", "pid", EQUALS, INTEGER(child));
+bool WatcherRunner::isChildSane(const PlatformProcess& child) const {
+  auto rows = SQL::selectAllFrom("processes", "pid", EQUALS, INTEGER(child.pid()));
   if (rows.size() == 0) {
     // Could not find worker process?
     return false;
@@ -318,7 +281,9 @@ bool WatcherRunner::isChildSane(pid_t child) {
 
   // Only make a decision about the child sanity if it is still the watcher's
   // child. It's possible for the child to die, and its pid reused.
-  if (parent != getpid()) {
+  //
+  // TODO(#1991): I'm not sure this is doing what it should be doing on Windows...
+  if (parent != getCurrentProcess().pid()) {
     // The child's parent is not the watcher.
     Watcher::reset(child);
     // Do not stop or call the child insane, since it is not our child.
@@ -327,13 +292,13 @@ bool WatcherRunner::isChildSane(pid_t child) {
 
   if (sustained_latency > 0 &&
       sustained_latency * iv >= getWorkerLimit(LATENCY_LIMIT)) {
-    LOG(WARNING) << "osqueryd worker (" << child
+    LOG(WARNING) << "osqueryd worker (" << child.pid()
                  << ") system performance limits exceeded";
     return false;
   }
   // Check if the private memory exceeds a memory limit.
   if (footprint > 0 && footprint > getWorkerLimit(MEMORY_LIMIT) * 1024 * 1024) {
-    LOG(WARNING) << "osqueryd worker (" << child
+    LOG(WARNING) << "osqueryd worker (" << child.pid()
                  << ") memory limits exceeded: " << footprint;
     return false;
   }
@@ -343,14 +308,11 @@ bool WatcherRunner::isChildSane(pid_t child) {
   if (use_worker_) {
     relayStatusLogs();
   }
-#endif
 
   return true;
 }
 
 void WatcherRunner::createWorker() {
-  // XXX TODO: Stubbed out
-#ifndef WIN32
   {
     WatcherLocker locker;
     if (Watcher::getState(Watcher::getWorker()).last_respawn_time >
@@ -367,7 +329,7 @@ void WatcherRunner::createWorker() {
   }
 
   // Get the path of the current process.
-  auto qd = SQL::selectAllFrom("processes", "pid", EQUALS, INTEGER(getpid()));
+  auto qd = SQL::selectAllFrom("processes", "pid", EQUALS, INTEGER(getCurrentProcess().pid()));
   if (qd.size() != 1 || qd[0].count("path") == 0 || qd[0]["path"].size() == 0) {
     LOG(ERROR) << "osquery watcher cannot determine process path for worker";
     Initializer::requestShutdown(EXIT_FAILURE);
@@ -377,7 +339,7 @@ void WatcherRunner::createWorker() {
   // Set an environment signaling to potential plugin-dependent workers to wait
   // for extensions to broadcast.
   if (Watcher::hasManagedExtensions()) {
-    setenv("OSQUERY_EXTENSIONS", "true", 1);
+    setEnvVar("OSQUERY_EXTENSIONS", "true");
   }
 
   // Get the complete path of the osquery process binary.
@@ -391,27 +353,18 @@ void WatcherRunner::createWorker() {
     return;
   }
 
-  auto worker_pid = fork();
-  if (worker_pid < 0) {
+  PlatformProcess worker = PlatformProcess::launchWorker(exec_path.string(), "osquery-worker");
+  if (!worker.isValid()) {
     // Unrecoverable error, cannot create a worker process.
     LOG(ERROR) << "osqueryd could not create a worker process";
     Initializer::shutdown(EXIT_FAILURE);
     return;
-  } else if (worker_pid == 0) {
-    // This is the new worker process, no watching needed.
-    setenv("OSQUERY_WORKER", std::to_string(getpid()).c_str(), 1);
-    execve(exec_path.string().c_str(), argv_, environ);
-    // Code should never reach this point.
-    LOG(ERROR) << "osqueryd could not start worker process";
-    Initializer::shutdown(EXIT_CATASTROPHIC);
-    return;
   }
 
-  Watcher::setWorker(worker_pid);
+  Watcher::setWorker(worker);
   Watcher::resetWorkerCounters(getUnixTime());
-  VLOG(1) << "osqueryd watcher (" << getpid() << ") executing worker ("
-          << worker_pid << ")";
-#endif
+  VLOG(1) << "osqueryd watcher (" << getCurrentProcess().pid() << ") executing worker ("
+          << worker.pid() << ")";
 }
 
 bool WatcherRunner::createExtension(const std::string& extension) {
@@ -435,45 +388,27 @@ bool WatcherRunner::createExtension(const std::string& extension) {
     return false;
   }
 
-  // XXX TODO: Stubbed out
-#ifndef WIN32
-  auto ext_pid = fork();
-  if (ext_pid < 0) {
+  PlatformProcess ext_process = PlatformProcess::launchExtension(exec_path.string(),
+                                                                 extension,
+                                                                 Flag::getValue("extensions_socket"),
+                                                                 Flag::getValue("extensions_timeout"),
+                                                                 Flag::getValue("extensions_interval"),
+                                                                 Flag::getValue("verbose"));
+  if (!ext_process.isValid()) {
     // Unrecoverable error, cannot create an extension process.
     LOG(ERROR) << "Cannot create extension process: " << extension;
     Initializer::shutdown(EXIT_FAILURE);
-  } else if (ext_pid == 0) {
-    // Pass the current extension socket and a set timeout to the extension.
-    setenv("OSQUERY_EXTENSION", std::to_string(getpid()).c_str(), 1);
-    // Execute extension with very specific arguments.
-    execle(exec_path.string().c_str(),
-           ("osquery extension: " + extension).c_str(),
-           "--socket",
-           Flag::getValue("extensions_socket").c_str(),
-           "--timeout",
-           Flag::getValue("extensions_timeout").c_str(),
-           "--interval",
-           Flag::getValue("extensions_interval").c_str(),
-           (Flag::getValue("verbose") == "true") ? "--verbose" : (char*)nullptr,
-           (char*)nullptr,
-           environ);
-    // Code should never reach this point.
-    VLOG(1) << "Could not start extension process: " << extension;
-    Initializer::shutdown(EXIT_FAILURE);
   }
 
-  Watcher::setExtension(extension, ext_pid);
+  Watcher::setExtension(extension, ext_process);
   Watcher::resetExtensionCounters(extension, getUnixTime());
-  VLOG(1) << "Created and monitoring extension child (" << ext_pid
+  VLOG(1) << "Created and monitoring extension child (" << ext_process.pid()
           << "): " << extension;
-#endif
 
   return true;
 }
 
 void WatcherWatcherRunner::start() {
-  // XXX TODO: Stubbed out
-#ifndef WIN32
   while (!interrupted()) {
     if (isLauncherProcessDead(watcher_)) {
       // Watcher died, the worker must follow.
@@ -485,7 +420,6 @@ void WatcherWatcherRunner::start() {
     }
     pauseMilli(getWorkerLimit(INTERVAL) * 1000);
   }
-#endif
 }
 
 size_t getWorkerLimit(WatchdogLimitType name, int level) {

@@ -109,7 +109,7 @@ static inline bool hasWorkerVariable() {
 
 volatile std::sig_atomic_t kHandledSignal{0};
 
-static inline bool isWatcher() { return (osquery::Watcher::getWorker() > 0); }
+static inline bool isWatcher() { return (osquery::Watcher::getWorker().isValid()); }
 
 #ifndef WIN32
 void signalHandler(int num) {
