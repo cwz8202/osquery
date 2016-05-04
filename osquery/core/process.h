@@ -76,7 +76,7 @@ class PlatformProcess {
     static PlatformProcess fromPlatformPid(PlatformPidType id);
     
   private:
-    PlatformPidType id_ = kInvalidPid;
+    PlatformPidType id_{ kInvalidPid };
 };
 
 PlatformProcess getCurrentProcess();

@@ -16,13 +16,10 @@
 
 #include "osquery/core/process.h"
 
-namespace osquery 
-{
+namespace osquery {
 
-void processSleep(unsigned int msec)
-{
+void processSleep(unsigned int msec) {
   std::chrono::milliseconds mduration(msec);
   std::this_thread::sleep_for(mduration);
 }
-
 }

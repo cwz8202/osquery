@@ -138,7 +138,8 @@ bool Watcher::hasManagedExtensions() {
   // Setting this counter to 0 will prevent the worker from waiting for missing
   // dependent config plugins. Otherwise, its existence, will cause a worker to
   // wait for missing plugins to broadcast from managed extensions.
-  if (auto value = getEnvVar("OSQUERY_EXTENSIONS")) {
+  auto value = getEnvVar("OSQUERY_EXTENSIONS");
+  if (value) {
     return true;
   }
   return false;
