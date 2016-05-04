@@ -27,11 +27,11 @@ PlatformProcess::PlatformProcess(PlatformPidType id)
 PlatformProcess::PlatformProcess(const PlatformProcess& src) = default;
 PlatformProcess::PlatformProcess(PlatformProcess&& src) = default;
 
-bool PlatformProcess::operator==(const PlatformProcess& process) {
+bool PlatformProcess::operator==(const PlatformProcess& process) const {
   return (nativeHandle() == process.nativeHandle());
 }
 
-bool PlatformProcess::operator!=(const PlatformProcess& process) {
+bool PlatformProcess::operator!=(const PlatformProcess& process) const {
   return (nativeHandle() != process.nativeHandle());
 }
 
