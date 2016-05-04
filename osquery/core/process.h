@@ -34,6 +34,7 @@ enum ProcessState {
 
 class PlatformProcess {
   public:
+    PlatformProcess(): id_(kInvalidPid) { }
     PlatformProcess(PlatformPidType id);
     PlatformProcess(const PlatformProcess& src);
     PlatformProcess(PlatformProcess&& src);
@@ -47,7 +48,7 @@ class PlatformProcess {
     //              error happens to occur.
     // TODO(#1991): Also, consider adding an argument for exit code so that clients can specificy
     //               the process exit code for the terminating process.
-    bool kill();
+    bool kill() const;
     
     bool isValid() const { return (id_ != kInvalidPid); }
 
@@ -62,8 +63,8 @@ class PlatformProcess {
     //              both HANDLEs are usable.
 
     PlatformProcess& operator=(const PlatformProcess& process);
-    bool operator==(const PlatformProcess& process);
-    bool operator!=(const PlatformProcess& process);
+    bool operator==(const PlatformProcess& process) const;
+    bool operator!=(const PlatformProcess& process) const;
     
     static PlatformProcess launchWorker(const std::string& exec_path, const std::string& name);
     static PlatformProcess launchExtension(const std::string& exec_path, 
@@ -94,7 +95,7 @@ boost::optional<std::string> getEnvVar(const std::string& name);
 // void registerExitHandlers(<func-ptr-type>); -- init.cpp:306
 
 // TODO(#1991): Missing waitpid functionality
-ProcessState checkChildProcessStatus(osquery::PlatformProcess& process, int& status);
+ProcessState checkChildProcessStatus(const osquery::PlatformProcess& process, int& status);
 void cleanupDefunctProcesses();
 
 // TODO(#1991): Missing setpriority functionality

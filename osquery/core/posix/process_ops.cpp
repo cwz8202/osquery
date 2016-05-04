@@ -61,7 +61,7 @@ void cleanupDefunctProcesses() {
   ::waitpid(-1, 0, WNOHANG);
 }
 
-ProcessState checkChildProcessStatus(osquery::PlatformProcess& process, int& status) {
+ProcessState checkChildProcessStatus(const PlatformProcess& process, int& status) {
   int process_status = 0;
   
   pid_t result = ::waitpid(process.nativeHandle(), &process_status, WNOHANG);

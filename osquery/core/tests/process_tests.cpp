@@ -116,7 +116,7 @@ TEST_F(ProcessTests, test_assignment) {
   EXPECT_NE(current.nativeHandle(), process.nativeHandle());
 #endif
 
-  EXPECT_TRUE(current == process);
+  EXPECT_EQ(current, process);
   EXPECT_FALSE(current != process);
 }
 
