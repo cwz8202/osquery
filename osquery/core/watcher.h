@@ -141,7 +141,7 @@ class Watcher : private boost::noncopyable {
   static void setWorker(PlatformProcess& child) { instance().worker_ = child; }
 
   /// Setter for an extension process.
-  static void setExtension(const std::string& extension, PlatformProcess& child);
+  static void setExtension(const std::string& extension, const PlatformProcess& child);
 
   /// Reset pid and performance counters for a worker or extension process.
   static void reset(const PlatformProcess& child);

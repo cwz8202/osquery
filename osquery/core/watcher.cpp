@@ -101,7 +101,7 @@ PerformanceState& Watcher::getState(const std::string& extension) {
   return instance().extension_states_[extension];
 }
 
-void Watcher::setExtension(const std::string& extension, PlatformProcess& child) {
+void Watcher::setExtension(const std::string& extension, const PlatformProcess& child) {
   WatcherLocker locker;
   instance().extensions_[extension] = child;
 }
