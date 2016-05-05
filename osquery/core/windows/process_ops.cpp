@@ -10,42 +10,42 @@
 
 #include <string>
 #include <vector>
-#include <stdlib.h>
+
 #include <boost/optional.hpp>
 
 #include "osquery/core/process.h"
 
 namespace osquery {
 
-PlatformProcess getCurrentProcess() {
+std::shared_ptr<PlatformProcess> getCurrentProcess() {
   HANDLE handle = ::OpenProcess(PROCESS_ALL_ACCESS, FALSE, ::GetCurrentProcessId());
   if (handle == NULL) {
-    return PlatformProcess(kInvalidPid);
+    return std::shared_ptr<PlatformProcess>();
   }
   
-  PlatformProcess process(handle);
+  auto process = std::make_shared<PlatformProcess>(handle);
   return process;
 }
 
-PlatformProcess getLauncherProcess() {
+std::shared_ptr<PlatformProcess> getLauncherProcess() {
   auto launcher_handle = getEnvVar("OSQUERY_LAUNCHER");
   if (!launcher_handle) {
-    return PlatformProcess(kInvalidPid);
+    return std::shared_ptr<PlatformProcess>();
   }
   
   // Convert the environment variable into a HANDLE (the value from environment variable 
   // should be a hex value). As a precaution, ensure that the HANDLE is valid.
   HANDLE handle = reinterpret_cast<HANDLE>(static_cast<std::uintptr_t>(std::stoull(*launcher_handle, nullptr, 16)));
   if (handle == NULL || handle == INVALID_HANDLE_VALUE) {
-    return PlatformProcess(kInvalidPid);
+    return std::shared_ptr<PlatformProcess>();
   }
-  
-  PlatformProcess launcher(handle);
+
+  auto launcher = std::make_shared<PlatformProcess>(handle);
   return launcher;
 }
 
 bool isLauncherProcessDead(PlatformProcess& launcher) {
-  DWORD code = 0 ;
+  DWORD code = 0;
   if (!::GetExitCodeProcess(launcher.nativeHandle(), &code)) {
     // TODO(#1991): If an error occurs with GetExitCodeProcess, do we want to return a Status 
     //              object to describe the error with more granularity?

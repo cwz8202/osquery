@@ -8,8 +8,9 @@
  *
  */
  
-#include <osquery/core.h>
 #include <gtest/gtest.h>
+
+#include <osquery/core.h>
 
 #include "osquery/core/process.h"
 #include "osquery/core/test_util.h"
@@ -87,8 +88,8 @@ TEST_F(ProcessTests, test_constructorPosix) {
 TEST_F(ProcessTests, test_getpid) {
   int pid = -1;
 
-  PlatformProcess process = getCurrentProcess();
-  EXPECT_TRUE(process.isValid());
+  std::shared_ptr<PlatformProcess> process = getCurrentProcess();
+  EXPECT_TRUE(process.get());
 
 #ifdef WIN32
     pid = (int) ::GetCurrentProcessId();
@@ -96,28 +97,7 @@ TEST_F(ProcessTests, test_getpid) {
     pid = getpid();
 #endif
 
-  EXPECT_EQ(process.pid(), pid);
-}
-
-TEST_F(ProcessTests, test_assignment) {
-  PlatformProcess process(kInvalidPid);
-  EXPECT_FALSE(process.isValid());
-
-  PlatformProcess current = getCurrentProcess();
-  EXPECT_TRUE(current.isValid());
-
-  PlatformPidType old_type = current.nativeHandle();
-
-  process = current;
-  EXPECT_EQ(current.nativeHandle(), old_type);
-
-#ifdef WIN32
-  // We make sure that the HANDLE values are not the same
-  EXPECT_NE(current.nativeHandle(), process.nativeHandle());
-#endif
-
-  EXPECT_EQ(current, process);
-  EXPECT_FALSE(current != process);
+  EXPECT_EQ(process->pid(), pid);
 }
 
 TEST_F(ProcessTests, test_envVar) {
@@ -137,32 +117,31 @@ TEST_F(ProcessTests, test_envVar) {
 
 TEST_F(ProcessTests, test_launchExtension) {
   {
-    osquery::PlatformProcess process = osquery::PlatformProcess::launchExtension(
-      self_exec_path,
-      "extension-test",
-      "socket-name",
-      "100",
-      "5",
-      "true"
-    );
-    EXPECT_TRUE(process.isValid());
+    std::shared_ptr<osquery::PlatformProcess> process =
+        osquery::PlatformProcess::launchExtension(self_exec_path,
+                                                  "extension-test",
+                                                  "socket-name",
+                                                  "100",
+                                                  "5",
+                                                  "true");
+    EXPECT_TRUE(process.get());
 
     int code = 0;
-    EXPECT_TRUE(getProcessExitCode(process, code));
+    EXPECT_TRUE(getProcessExitCode(*process, code));
     EXPECT_EQ(code, EXTENSION_SUCCESS_CODE);
   }
 }
 
 TEST_F(ProcessTests, test_launchWorker) {
   {
-    osquery::PlatformProcess process = osquery::PlatformProcess::launchWorker(
+    std::shared_ptr<osquery::PlatformProcess> process = osquery::PlatformProcess::launchWorker(
       self_exec_path,
       "worker-test"
     );
-    EXPECT_TRUE(process.isValid());
+    EXPECT_TRUE(process.get());
 
     int code = 0;
-    EXPECT_TRUE(getProcessExitCode(process, code));
+    EXPECT_TRUE(getProcessExitCode(*process, code));
     EXPECT_EQ(code, WORKER_SUCCESS_CODE);
   }
 }

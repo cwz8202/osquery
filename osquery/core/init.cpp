@@ -328,7 +328,7 @@ Initializer::Initializer(int& argc, char**& argv, ToolType tool)
   initStatusLogger(binary_);
   if (tool != OSQUERY_EXTENSION) {
     if (isWorker()) {
-      VLOG(1) << "osquery worker initialized [watcher=" << getLauncherProcess().pid() << "]";
+      VLOG(1) << "osquery worker initialized [watcher=" << getLauncherProcess()->pid() << "]";
     } else {
       VLOG(1) << "osquery initialized [version=" << kVersion << "]";
     }

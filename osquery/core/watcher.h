@@ -117,7 +117,7 @@ class Watcher : private boost::noncopyable {
   static void unlock() { instance().lock_.unlock(); }
 
   /// Accessor for autoloadable extension paths.
-  static const std::map<std::string, PlatformProcess>& extensions() {
+  static const std::map<std::string, std::shared_ptr<PlatformProcess>>& extensions() {
     return instance().extensions_;
   }
 
@@ -135,13 +135,13 @@ class Watcher : private boost::noncopyable {
   static PerformanceState& getState(const std::string& extension);
 
   /// Accessor for the worker process.
-  static PlatformProcess& getWorker() { return instance().worker_; }
+  static PlatformProcess& getWorker() { return *instance().worker_; }
 
   /// Setter for worker process.
-  static void setWorker(PlatformProcess& child) { instance().worker_ = child; }
+  static void setWorker(std::shared_ptr<PlatformProcess> child) { instance().worker_ = child; }
 
   /// Setter for an extension process.
-  static void setExtension(const std::string& extension, const PlatformProcess& child);
+  static void setExtension(const std::string& extension, std::shared_ptr<PlatformProcess> child);
 
   /// Reset pid and performance counters for a worker or extension process.
   static void reset(const PlatformProcess& child);
@@ -170,7 +170,7 @@ class Watcher : private boost::noncopyable {
  private:
   /// Do not request the lock until extensions are used.
   Watcher()
-      : worker_(kInvalidPid), worker_restarts_(0), lock_(mutex_, std::defer_lock) {}
+      : worker_(nullptr), worker_restarts_(0), lock_(mutex_, std::defer_lock) {}
   Watcher(Watcher const&);
 
   void operator=(Watcher const&);
@@ -189,15 +189,13 @@ class Watcher : private boost::noncopyable {
 
  private:
   /// Keep the single worker process/thread ID for inspection.
-  ///
-  /// TODO(#1991): WE NEED TO PROTECT THIS WITH A MUTEX
-  PlatformProcess worker_{ kInvalidPid };
+  std::shared_ptr<PlatformProcess> worker_;
 
   /// Number of worker restarts NOT induced by a watchdog process.
   size_t worker_restarts_{0};
 
   /// Keep a list of resolved extension paths and their managed pids.
-  std::map<std::string, PlatformProcess> extensions_;
+  std::map<std::string, std::shared_ptr<PlatformProcess>> extensions_;
 
   /// Paths to autoload extensions.
   std::vector<std::string> extensions_paths_;
@@ -285,14 +283,14 @@ class WatcherRunner : public InternalRunnable {
 /// The WatcherWatcher is spawned within the worker and watches the watcher.
 class WatcherWatcherRunner : public InternalRunnable {
  public:
-  explicit WatcherWatcherRunner(const PlatformProcess& watcher) : watcher_(watcher) {}
+  explicit WatcherWatcherRunner(std::shared_ptr<PlatformProcess> watcher) : watcher_(watcher) {}
 
   /// Runnable thread's entry point.
   void start();
 
  private:
   /// Parent, or watchdog, process ID.
-  PlatformProcess watcher_{kInvalidPid};
+   std::shared_ptr<PlatformProcess> watcher_;
 };
 
 /// Get a performance limit by name and optional level.

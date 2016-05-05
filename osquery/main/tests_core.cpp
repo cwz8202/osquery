@@ -14,6 +14,8 @@
 #include <Shlwapi.h>
 #endif
 
+#include <memory>
+
 #include <gtest/gtest.h>
 
 #include <osquery/logger.h>
@@ -68,15 +70,15 @@ int workerMain(int argc, char *argv[]) {
     return -1;
   }
 
-  osquery::PlatformProcess process = osquery::getLauncherProcess();
-  if (!process.isValid()) {
+  std::shared_ptr<osquery::PlatformProcess> process = osquery::getLauncherProcess();
+  if (!process) {
     return -2;
   }
 
 #ifdef WIN32
   CHAR buffer[1024] = { 0 };
   DWORD size = 1024;
-  if (!QueryFullProcessImageNameA(process.nativeHandle(),
+  if (!QueryFullProcessImageNameA(process->nativeHandle(),
     0,
     buffer,
     &size)) {
