@@ -76,7 +76,7 @@ void Watcher::resetExtensionCounters(const std::string& extension,
 
 std::string Watcher::getExtensionPath(const PlatformProcess& child) {
   for (const auto& extension : extensions()) {
-    if (extension.second == child) {
+    if (*extension.second == child) {
       return extension.first;
     }
   }
@@ -90,7 +90,7 @@ void Watcher::removeExtensionPath(const std::string& extension) {
 }
 
 PerformanceState& Watcher::getState(const PlatformProcess& child) {
-  if (child == instance().worker_) {
+  if (child == *instance().worker_) {
     return instance().state_;
   } else {
     return instance().extension_states_[getExtensionPath(child)];
@@ -101,13 +101,13 @@ PerformanceState& Watcher::getState(const std::string& extension) {
   return instance().extension_states_[extension];
 }
 
-void Watcher::setExtension(const std::string& extension, const PlatformProcess& child) {
+void Watcher::setExtension(const std::string& extension, std::shared_ptr<PlatformProcess> child) {
   WatcherLocker locker;
   instance().extensions_[extension] = child;
 }
 
 void Watcher::reset(const PlatformProcess& child) {
-  if (child == instance().worker_) {
+  if (child == *instance().worker_) {
     instance().worker_ = 0;
     resetWorkerCounters(0);
     return;
@@ -115,9 +115,9 @@ void Watcher::reset(const PlatformProcess& child) {
 
   // If it was not the worker pid then find the extension name to reset.
   for (const auto& extension : extensions()) {
-    if (extension.second == child) {
+    if (*extension.second == child) {
       // TODO(#1991): Why is pid_t set to 0?
-      setExtension(extension.first, PlatformProcess(kInvalidPid));
+      setExtension(extension.first, std::shared_ptr<PlatformProcess>());
       resetExtensionCounters(extension.first, 0);
     }
   }
@@ -125,7 +125,7 @@ void Watcher::reset(const PlatformProcess& child) {
 
 void Watcher::addExtensionPath(const std::string& path) {
   // TODO(#1991): Why is pid_t set to 0?
-  setExtension(path, PlatformProcess(kInvalidPid));
+  setExtension(path, std::shared_ptr<PlatformProcess>());
   resetExtensionCounters(path, 0);
 }
 
@@ -173,7 +173,7 @@ void WatcherRunner::start() {
     // Loop over every managed extension and check sanity.
     std::vector<std::string> failing_extensions;
     for (const auto& extension : Watcher::extensions()) {
-      if (!watch(extension.second)) {
+      if (!watch(*extension.second)) {
         if (!createExtension(extension.first)) {
           failing_extensions.push_back(extension.first);
         }
@@ -284,7 +284,8 @@ bool WatcherRunner::isChildSane(const PlatformProcess& child) const {
   // child. It's possible for the child to die, and its pid reused.
   //
   // TODO(#1991): I'm not sure this is doing what it should be doing on Windows...
-  if (parent != getCurrentProcess().pid()) {
+  //              Additionally, getCurrentProcess() *may* fail under exceptional cases
+  if (parent != getCurrentProcess()->pid()) {
     // The child's parent is not the watcher.
     Watcher::reset(child);
     // Do not stop or call the child insane, since it is not our child.
@@ -330,7 +331,7 @@ void WatcherRunner::createWorker() {
   }
 
   // Get the path of the current process.
-  auto qd = SQL::selectAllFrom("processes", "pid", EQUALS, INTEGER(getCurrentProcess().pid()));
+  auto qd = SQL::selectAllFrom("processes", "pid", EQUALS, INTEGER(getCurrentProcess()->pid()));
   if (qd.size() != 1 || qd[0].count("path") == 0 || qd[0]["path"].size() == 0) {
     LOG(ERROR) << "osquery watcher cannot determine process path for worker";
     Initializer::requestShutdown(EXIT_FAILURE);
@@ -354,8 +355,8 @@ void WatcherRunner::createWorker() {
     return;
   }
 
-  PlatformProcess worker = PlatformProcess::launchWorker(exec_path.string(), "osquery-worker");
-  if (!worker.isValid()) {
+  std::shared_ptr<PlatformProcess> worker = PlatformProcess::launchWorker(exec_path.string(), "osquery-worker");
+  if (!worker) {
     // Unrecoverable error, cannot create a worker process.
     LOG(ERROR) << "osqueryd could not create a worker process";
     Initializer::shutdown(EXIT_FAILURE);
@@ -364,8 +365,8 @@ void WatcherRunner::createWorker() {
 
   Watcher::setWorker(worker);
   Watcher::resetWorkerCounters(getUnixTime());
-  VLOG(1) << "osqueryd watcher (" << getCurrentProcess().pid() << ") executing worker ("
-          << worker.pid() << ")";
+  VLOG(1) << "osqueryd watcher (" << getCurrentProcess()->pid() << ") executing worker ("
+          << worker->pid() << ")";
 }
 
 bool WatcherRunner::createExtension(const std::string& extension) {
@@ -389,13 +390,14 @@ bool WatcherRunner::createExtension(const std::string& extension) {
     return false;
   }
 
-  PlatformProcess ext_process = PlatformProcess::launchExtension(exec_path.string(),
-                                                                 extension,
-                                                                 Flag::getValue("extensions_socket"),
-                                                                 Flag::getValue("extensions_timeout"),
-                                                                 Flag::getValue("extensions_interval"),
-                                                                 Flag::getValue("verbose"));
-  if (!ext_process.isValid()) {
+  std::shared_ptr<PlatformProcess> ext_process =
+      PlatformProcess::launchExtension(exec_path.string(),
+                                       extension,
+                                       Flag::getValue("extensions_socket"),
+                                       Flag::getValue("extensions_timeout"),
+                                       Flag::getValue("extensions_interval"),
+                                       Flag::getValue("verbose"));
+  if (!ext_process) {
     // Unrecoverable error, cannot create an extension process.
     LOG(ERROR) << "Cannot create extension process: " << extension;
     Initializer::shutdown(EXIT_FAILURE);
@@ -403,7 +405,7 @@ bool WatcherRunner::createExtension(const std::string& extension) {
 
   Watcher::setExtension(extension, ext_process);
   Watcher::resetExtensionCounters(extension, getUnixTime());
-  VLOG(1) << "Created and monitoring extension child (" << ext_process.pid()
+  VLOG(1) << "Created and monitoring extension child (" << ext_process->pid()
           << "): " << extension;
 
   return true;
@@ -411,10 +413,10 @@ bool WatcherRunner::createExtension(const std::string& extension) {
 
 void WatcherWatcherRunner::start() {
   while (!interrupted()) {
-    if (isLauncherProcessDead(watcher_)) {
+    if (isLauncherProcessDead(*watcher_)) {
       // Watcher died, the worker must follow.
-      VLOG(1) << "osqueryd worker (" << getCurrentProcess().pid()
-              << ") detected killed watcher (" << watcher_.pid() << ")";
+      VLOG(1) << "osqueryd worker (" << getCurrentProcess()->pid()
+              << ") detected killed watcher (" << watcher_->pid() << ")";
       // The watcher watcher is a thread. Do not join services after removing.
       Initializer::requestShutdown();
       break;

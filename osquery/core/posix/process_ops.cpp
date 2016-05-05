@@ -9,26 +9,28 @@
  */
 
 #include <string>
-#include <stdlib.h>
-#include <boost/optional.hpp>
 
+#include <stdlib.h>
+
+#include <sys/resource.h>
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-#include <sys/resource.h>
+
+#include <boost/optional.hpp>
 
 #include "osquery/core/process.h"
 
 namespace osquery {
 
-PlatformProcess getCurrentProcess() {
+std::shared_ptr<PlatformProcess> getCurrentProcess() {
   pid_t pid = ::getpid();
-  return PlatformProcess(pid);
+  return std::make_shared<PlatformProcess>(pid);
 }
 
-PlatformProcess getLauncherProcess() {
+std::shared_ptr<PlatformProcess> getLauncherProcess() {
   pid_t ppid = ::getppid();
-  return PlatformProcess(ppid);
+  return std::make_shared<PlatformProcess>(ppid);
 }
 
 bool isLauncherProcessDead(PlatformProcess& launcher) {

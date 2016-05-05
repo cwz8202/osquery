@@ -9,8 +9,8 @@
  */
 
 #include <chrono>
-#include <thread>
 #include <string>
+#include <thread>
 
 #include <boost/optional.hpp>
 

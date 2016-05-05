@@ -8,9 +8,11 @@
  *
  */
 
-#include <vector>
 #include <sstream>
+#include <vector>
+
 #include <signal.h>
+
 #include <sys/types.h>
 
 #include "osquery/core/process.h"
@@ -38,13 +40,13 @@ osquery::PlatformPidType __declspec(nothrow) duplicateHandle(osquery::PlatformPi
 
 namespace osquery {
 
-PlatformProcess::PlatformProcess(PlatformPidType id) { 
+PlatformProcess::PlatformProcess(PlatformPidType id) {
   id_ = duplicateHandle(id);
 }
 
-PlatformProcess::PlatformProcess(const PlatformProcess& src) {
-  id_ = duplicateHandle(src.nativeHandle());
-}
+// PlatformProcess::PlatformProcess(const PlatformProcess& src) {
+//   id_ = duplicateHandle(src.nativeHandle());
+// }
 
 PlatformProcess::PlatformProcess(PlatformProcess&& src) {
   id_ = kInvalidPid;
@@ -58,10 +60,10 @@ PlatformProcess::~PlatformProcess() {
   }
 }
 
-PlatformProcess& PlatformProcess::operator=(const PlatformProcess& process) {
-  id_ = duplicateHandle(process.nativeHandle());
-  return *this;
-}
+// PlatformProcess& PlatformProcess::operator=(const PlatformProcess& process) {
+//   id_ = duplicateHandle(process.nativeHandle());
+//   return *this;
+// }
 
 bool PlatformProcess::operator==(const PlatformProcess& process) const {
   return (::GetProcessId(nativeHandle()) == ::GetProcessId(process.nativeHandle()));
@@ -83,7 +85,7 @@ bool PlatformProcess::kill() const {
   return ::TerminateProcess(id_, 0);
 }
 
-PlatformProcess PlatformProcess::launchWorker(const std::string& exec_path, const std::string& name) {
+std::shared_ptr<PlatformProcess> PlatformProcess::launchWorker(const std::string& exec_path, const std::string& name) {
   ::STARTUPINFOA si = { 0 };
   ::PROCESS_INFORMATION pi = { 0 };
   
@@ -105,7 +107,7 @@ PlatformProcess PlatformProcess::launchWorker(const std::string& exec_path, cons
                                           TRUE, 
                                           GetCurrentProcessId());
   if (hLauncherProcess == NULL) {
-    return PlatformProcess(kInvalidPid);
+    return std::shared_ptr<PlatformProcess>();
   }
   
   handle_stream << hLauncherProcess;
@@ -122,7 +124,7 @@ PlatformProcess PlatformProcess::launchWorker(const std::string& exec_path, cons
       !setEnvVar("OSQUERY_LAUNCHER", handle.c_str())) {
     ::CloseHandle(hLauncherProcess);
 
-    return PlatformProcess(kInvalidPid);
+    return std::shared_ptr<PlatformProcess>();
   }
   
   // We don't directly use argv.c_str() as the value for lpCommandLine in CreateProcess since
@@ -147,17 +149,17 @@ PlatformProcess PlatformProcess::launchWorker(const std::string& exec_path, cons
   ::CloseHandle(hLauncherProcess);
   
   if (!status) {
-    return PlatformProcess(kInvalidPid);
+    return std::shared_ptr<PlatformProcess>();
   }
   
-  PlatformProcess process(pi.hProcess);
+  auto process = std::make_shared<PlatformProcess>(pi.hProcess);
   ::CloseHandle(pi.hThread);
   ::CloseHandle(pi.hProcess);
   
   return process;
 }
 
-PlatformProcess PlatformProcess::launchExtension(const std::string& exec_path, 
+std::shared_ptr<PlatformProcess> PlatformProcess::launchExtension(const std::string& exec_path,
                                                  const std::string& extension, 
                                                  const std::string& extensions_socket,
                                                  const std::string& extensions_timeout,
@@ -182,9 +184,10 @@ PlatformProcess PlatformProcess::launchExtension(const std::string& exec_path,
     argv_stream << "--verbose";
   }
 
-  // We don't directly use argv.c_str() as the value for lpCommandLine in CreateProcess since
-  // that argument requires a modifiable buffer. So, instead, we off-load the contents of argv
-  // into a vector which will have its backing memory as modifiable.
+  // We don't directly use argv.c_str() as the value for lpCommandLine in
+  // CreateProcess since that argument requires a modifiable buffer. So,
+  // instead, we off-load the contents of argv into a vector which will have its
+  // backing memory as modifiable.
   std::string argv = argv_stream.str();
   std::vector<char> mutable_argv(argv.begin(), argv.end());
   mutable_argv.push_back('\0');
@@ -192,7 +195,7 @@ PlatformProcess PlatformProcess::launchExtension(const std::string& exec_path,
   // In POSIX, this environment variable is set to the child's process ID. But that is not easily
   // accomplishable on Windows and provides no value since this is never used elsewhere in the core.
   if (!setEnvVar("OSQUERY_EXTENSION", "1")) {
-    return PlatformProcess(kInvalidPid);
+    return std::shared_ptr<PlatformProcess>();
   }
   
   BOOL status = ::CreateProcessA(exec_path.c_str(),
@@ -208,10 +211,10 @@ PlatformProcess PlatformProcess::launchExtension(const std::string& exec_path,
   unsetEnvVar("OSQUERY_EXTENSION");
   
   if (!status) {
-    return PlatformProcess(kInvalidPid);
+    return std::shared_ptr<PlatformProcess>();
   }
 
-  PlatformProcess process(pi.hProcess);
+  auto process = std::make_shared<PlatformProcess>(pi.hProcess);
   ::CloseHandle(pi.hThread);
   ::CloseHandle(pi.hProcess);
   

@@ -10,7 +10,9 @@
 
 #pragma once
 
+#include <memory>
 #include <string>
+
 #include <boost/optional.hpp>
 
 #include <osquery/core.h>
@@ -34,9 +36,10 @@ enum ProcessState {
 
 class PlatformProcess {
   public:
-    PlatformProcess(): id_(kInvalidPid) { }
-    PlatformProcess(PlatformPidType id);
-    PlatformProcess(const PlatformProcess& src);
+    explicit PlatformProcess(): id_(kInvalidPid) { }
+    explicit PlatformProcess(PlatformPidType id);
+
+    PlatformProcess(const PlatformProcess& src) = delete;
     PlatformProcess(PlatformProcess&& src);
     ~PlatformProcess();
 
@@ -52,24 +55,26 @@ class PlatformProcess {
     
     bool isValid() const { return (id_ != kInvalidPid); }
 
-    PlatformProcess& operator=(const PlatformProcess& process);
+    PlatformProcess& operator=(const PlatformProcess& process) = delete;
     bool operator==(const PlatformProcess& process) const;
     bool operator!=(const PlatformProcess& process) const;
-    
-    static PlatformProcess launchWorker(const std::string& exec_path, const std::string& name);
-    static PlatformProcess launchExtension(const std::string& exec_path, 
-                                           const std::string& extension,
-                                           const std::string& extensions_socket,
-                                           const std::string& extensions_timeout,
-                                           const std::string& extensions_interval,
-                                           const std::string& verbose);
-    
-  private:
+
+    static std::shared_ptr<PlatformProcess> launchWorker(
+        const std::string& exec_path, const std::string& name);
+    static std::shared_ptr<PlatformProcess> launchExtension(
+        const std::string& exec_path,
+        const std::string& extension,
+        const std::string& extensions_socket,
+        const std::string& extensions_timeout,
+        const std::string& extensions_interval,
+        const std::string& verbose);
+
+   private:
     PlatformPidType id_;
 };
 
-PlatformProcess getCurrentProcess();
-PlatformProcess getLauncherProcess();
+std::shared_ptr<PlatformProcess> getCurrentProcess();
+std::shared_ptr<PlatformProcess> getLauncherProcess();
 
 void processSleep(unsigned int msec);
 
