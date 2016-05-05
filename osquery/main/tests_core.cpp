@@ -94,7 +94,7 @@ int workerMain(int argc, char *argv[]) {
     return -5;
   }
 #else
-  if (process.nativeHandle() != getppid()) {
+  if (process->nativeHandle() != getppid()) {
     return -3;
   }
 #endif
