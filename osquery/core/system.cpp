@@ -65,6 +65,8 @@ FLAG(string,
      "hostname",
      "Field used to identify the host running osquery (hostname, uuid)");
 
+FLAG(bool, utc, false, "Convert all UNIX times to UTC");
+
 std::string getHostname() {
   // TODO: This is temporary for now! Massive technical debt...
 #ifdef WIN32
@@ -156,6 +158,9 @@ std::string getAsciiTime() {
 
 size_t getUnixTime() {
   auto result = std::time(nullptr);
+  if (FLAGS_utc) {
+    result = std::mktime(std::gmtime(&result));
+  }
   return result;
 }
 

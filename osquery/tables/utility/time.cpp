@@ -9,18 +9,30 @@
  */
 
 #include <ctime>
+
 #include <boost/algorithm/string/trim.hpp>
 
+#include <osquery/core.h>
+#include <osquery/flags.h>
 #include <osquery/tables.h>
 
 namespace osquery {
+
+DECLARE_bool(utc);
+
 namespace tables {
 
 QueryData genTime(QueryContext& context) {
   Row r;
-  time_t _time = time(nullptr);
-  struct tm* now = localtime(&_time);
-  struct tm* gmt = gmtime(&_time);
+  // Request UNIX time (a wrapper around std::time).
+  auto local_time = std::time(nullptr);
+  auto osquery_time = getUnixTime();
+  auto osquery_timestamp = getAsciiTime();
+
+  // The concept of 'now' is configurable.
+  struct tm* gmt = std::gmtime(&local_time);
+  struct tm* now = (FLAGS_utc) ? gmt : std::localtime(&local_time);
+  struct tm* local = std::localtime(&local_time);
 
   char weekday[10] = {0};
   strftime(weekday, sizeof(weekday), "%A", now);
@@ -28,10 +40,8 @@ QueryData genTime(QueryContext& context) {
   char timezone[5] = {0};
   strftime(timezone, sizeof(timezone), "%Z", now);
 
-  std::string timestamp;
-  timestamp = asctime(gmt);
-  boost::algorithm::trim(timestamp);
-  timestamp += " UTC";
+  char local_timezone[5] = {0};
+  strftime(local_timezone, sizeof(local_timezone), "%Z", local);
 
   char iso_8601[21] = {0};
   strftime(iso_8601, sizeof(iso_8601), "%FT%TZ", gmt);
@@ -44,8 +54,12 @@ QueryData genTime(QueryContext& context) {
   r["minutes"] = INTEGER(now->tm_min);
   r["seconds"] = INTEGER(now->tm_sec);
   r["timezone"] = TEXT(timezone);
-  r["unix_time"] = INTEGER(_time);
-  r["timestamp"] = TEXT(timestamp);
+  r["local_time"] = INTEGER(local_time);
+  r["local_timezone"] = TEXT(local_timezone);
+  r["unix_time"] = INTEGER(osquery_time);
+  r["timestamp"] = TEXT(osquery_timestamp);
+  // Date time is provided in ISO 8601 format, then duplicated in iso_8601.
+  r["datetime"] = TEXT(iso_8601);
   r["iso_8601"] = TEXT(iso_8601);
 
   QueryData results;
