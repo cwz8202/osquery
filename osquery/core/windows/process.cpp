@@ -44,10 +44,6 @@ PlatformProcess::PlatformProcess(PlatformPidType id) {
   id_ = duplicateHandle(id);
 }
 
-// PlatformProcess::PlatformProcess(const PlatformProcess& src) {
-//   id_ = duplicateHandle(src.nativeHandle());
-// }
-
 PlatformProcess::PlatformProcess(PlatformProcess&& src) {
   id_ = kInvalidPid;
   std::swap(id_, src.id_);
@@ -59,11 +55,6 @@ PlatformProcess::~PlatformProcess() {
     id_ = kInvalidPid;
   }
 }
-
-// PlatformProcess& PlatformProcess::operator=(const PlatformProcess& process) {
-//   id_ = duplicateHandle(process.nativeHandle());
-//   return *this;
-// }
 
 bool PlatformProcess::operator==(const PlatformProcess& process) const {
   return (::GetProcessId(nativeHandle()) == ::GetProcessId(process.nativeHandle()));
@@ -95,8 +86,7 @@ std::shared_ptr<PlatformProcess> PlatformProcess::launchWorker(const std::string
   //              with double quotes have the potential of causing argument parsing issues. However, it
   //              is not a huge concern for the worker process, for it does not pass any command line 
   //              arguments.
-  std::stringstream argv_stream;
-  argv_stream << "\"" << name << "\"";
+  auto argv = std::string("\"") + name + "\"";
   
   std::stringstream handle_stream;
   
@@ -130,7 +120,6 @@ std::shared_ptr<PlatformProcess> PlatformProcess::launchWorker(const std::string
   // We don't directly use argv.c_str() as the value for lpCommandLine in CreateProcess since
   // that argument requires a modifiable buffer. So, instead, we off-load the contents of argv
   // into a vector which will have its backing memory as modifiable.
-  std::string argv = argv_stream.str();
   std::vector<char> mutable_argv(argv.begin(), argv.end());
   mutable_argv.push_back('\0');
   
@@ -176,7 +165,7 @@ std::shared_ptr<PlatformProcess> PlatformProcess::launchExtension(const std::str
   //              extension.
   std::stringstream argv_stream;
   argv_stream << "\"osquery extension: " << extension << "\" ";
-  argv_stream << "--socket " << extensions_socket << " ";
+  argv_stream << "--socket \"" << extensions_socket << "\" ";
   argv_stream << "--timeout " << extensions_timeout << " ";
   argv_stream << "--interval " << extensions_interval << " ";
   

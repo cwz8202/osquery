@@ -18,11 +18,12 @@
 namespace osquery {
 
 std::shared_ptr<PlatformProcess> getCurrentProcess() {
-  HANDLE handle = ::OpenProcess(PROCESS_ALL_ACCESS, FALSE, ::GetCurrentProcessId());
+  HANDLE handle =
+      ::OpenProcess(PROCESS_ALL_ACCESS, FALSE, ::GetCurrentProcessId());
   if (handle == NULL) {
     return std::shared_ptr<PlatformProcess>();
   }
-  
+
   auto process = std::make_shared<PlatformProcess>(handle);
   return process;
 }
@@ -32,10 +33,21 @@ std::shared_ptr<PlatformProcess> getLauncherProcess() {
   if (!launcher_handle) {
     return std::shared_ptr<PlatformProcess>();
   }
-  
-  // Convert the environment variable into a HANDLE (the value from environment variable 
-  // should be a hex value). As a precaution, ensure that the HANDLE is valid.
-  HANDLE handle = reinterpret_cast<HANDLE>(static_cast<std::uintptr_t>(std::stoull(*launcher_handle, nullptr, 16)));
+
+  // Convert the environment variable into a HANDLE (the value from environment
+  // variable should be a hex value). As a precaution, ensure that the HANDLE is
+  // valid.
+  HANDLE handle = INVALID_HANDLE_VALUE;
+
+  try {
+    handle = reinterpret_cast<HANDLE>(static_cast<std::uintptr_t>(
+        std::stoull(*launcher_handle, nullptr, 16)));
+  } catch (std::invalid_argument e) {
+    return std::shared_ptr<PlatformProcess>();
+  } catch (std::out_of_range e) {
+    return std::shared_ptr<PlatformProcess>();
+  }
+
   if (handle == NULL || handle == INVALID_HANDLE_VALUE) {
     return std::shared_ptr<PlatformProcess>();
   }
@@ -47,11 +59,11 @@ std::shared_ptr<PlatformProcess> getLauncherProcess() {
 bool isLauncherProcessDead(PlatformProcess& launcher) {
   DWORD code = 0;
   if (!::GetExitCodeProcess(launcher.nativeHandle(), &code)) {
-    // TODO(#1991): If an error occurs with GetExitCodeProcess, do we want to return a Status 
-    //              object to describe the error with more granularity?
+    // TODO(#1991): If an error occurs with GetExitCodeProcess, do we want to
+    // return a Status object to describe the error with more granularity?
     return false;
   }
-  
+
   return (code != STILL_ACTIVE);
 }
 
@@ -67,33 +79,37 @@ boost::optional<std::string> getEnvVar(const std::string& name) {
   const int kInitialBufferSize = 1024;
   std::vector<char> buf;
   buf.assign(kInitialBufferSize, '\0');
-  
-  DWORD value_len = ::GetEnvironmentVariableA(name.c_str(), &buf[0], kInitialBufferSize);
+
+  DWORD value_len =
+      ::GetEnvironmentVariableA(name.c_str(), &buf[0], kInitialBufferSize);
   if (value_len == 0) {
-    // TODO(#1991): Do we want figure out a way to be more granular in terms of the error to 
-    //              return?
+    // TODO(#1991): Do we want figure out a way to be more granular in terms of
+    // the error to return?
     return boost::none;
   }
-  
-  // It is always possible that between the first GetEnvironmentVariableA call and this one, 
-  // a change was made to our target environment variable that altered the size. Currently,
-  // we ignore this scenario and fail if the returned size is greater than what we expect.
+
+  // It is always possible that between the first GetEnvironmentVariableA call
+  // and this one, a change was made to our target environment variable that
+  // altered the size. Currently, we ignore this scenario and fail if the
+  // returned size is greater than what we expect.
   if (value_len > kInitialBufferSize) {
     buf.assign(value_len, '\0');
     value_len = ::GetEnvironmentVariableA(name.c_str(), &buf[0], value_len);
     if (value_len == 0 || value_len > buf.size()) {
-      // The size returned is greater than the size we expected. Currently, we will not deal
-      // with this scenario and just return as if an error has occurred.
+      // The size returned is greater than the size we expected. Currently, we
+      // will not deal with this scenario and just return as if an error has
+      // occurred.
       return boost::none;
     }
   }
-  
+
   return std::string(&buf[0], value_len);
 }
 
-void cleanupDefunctProcesses() { }
+void cleanupDefunctProcesses() {}
 
-ProcessState checkChildProcessStatus(const PlatformProcess& process, int& status) {
+ProcessState checkChildProcessStatus(const PlatformProcess& process,
+                                     int& status) {
   DWORD exit_code = 0;
   if (!::GetExitCodeProcess(process.nativeHandle(), &exit_code)) {
     return PROCESS_ERROR;
