@@ -25,8 +25,6 @@ namespace osquery {
 PlatformProcess::PlatformProcess(PlatformPidType id)
   : id_(id) { }
 
-PlatformProcess::PlatformProcess(PlatformProcess&& src) = default;
-
 bool PlatformProcess::operator==(const PlatformProcess& process) const {
   return (nativeHandle() == process.nativeHandle());
 }
