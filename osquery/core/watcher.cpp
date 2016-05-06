@@ -355,7 +355,7 @@ void WatcherRunner::createWorker() {
     return;
   }
 
-  std::shared_ptr<PlatformProcess> worker = PlatformProcess::launchWorker(exec_path.string(), "osquery-worker");
+  std::shared_ptr<PlatformProcess> worker = PlatformProcess::launchWorker(exec_path.string(), argv_[0]);
   if (!worker) {
     // Unrecoverable error, cannot create a worker process.
     LOG(ERROR) << "osqueryd could not create a worker process";

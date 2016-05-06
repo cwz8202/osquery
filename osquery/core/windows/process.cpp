@@ -82,17 +82,11 @@ std::shared_ptr<PlatformProcess> PlatformProcess::launchWorker(const std::string
   
   si.cb = sizeof(si);
   
-  // TODO(#1991): We currently do not sanitize or check for bad characters in for the worker name. Names
-  //              with double quotes have the potential of causing argument parsing issues. However, it
-  //              is not a huge concern for the worker process, for it does not pass any command line 
-  //              arguments.
-  auto argv = std::string("\"") + name + "\"";
-  
   std::stringstream handle_stream;
-  
-  // TODO(#1991): The HANDLE exposed to the child process only has SYNCHRONIZE and 
-  //              PROCESS_QUERY_LIMITED_INFORMATION privileges which is enough to cover the current use 
-  //              cases. This may not be the case in the future...
+
+  // The HANDLE exposed to the child process is currently limited to only having SYNCHRONIZE and PROCESS_QUERY_LIMITED_INFORMATION 
+  // capabilities. The SYNCHRONIZE permissions allows for WaitForSingleObject. PROCESS_QUERY_LIMITED_INFORMATION allows for the 
+  // ability to use the GetProcessId and GetExitCodeProcess API functions.
   HANDLE hLauncherProcess = ::OpenProcess(SYNCHRONIZE | PROCESS_QUERY_LIMITED_INFORMATION, 
                                           TRUE, 
                                           GetCurrentProcessId());
@@ -120,6 +114,7 @@ std::shared_ptr<PlatformProcess> PlatformProcess::launchWorker(const std::string
   // We don't directly use argv.c_str() as the value for lpCommandLine in CreateProcess since
   // that argument requires a modifiable buffer. So, instead, we off-load the contents of argv
   // into a vector which will have its backing memory as modifiable.
+  auto argv = std::string("\"") + name + "\"";
   std::vector<char> mutable_argv(argv.begin(), argv.end());
   mutable_argv.push_back('\0');
   
@@ -159,10 +154,6 @@ std::shared_ptr<PlatformProcess> PlatformProcess::launchExtension(const std::str
   
   si.cb = sizeof(si);
   
-  // TODO(#1991): extension name should be sanitized or checked for invalid characters such as 
-  //              double quotes. An extension name with bad characters has the potential of affecting
-  //              command line argument parsing in the extension process which may lead to a dysfunctional
-  //              extension.
   std::stringstream argv_stream;
   argv_stream << "\"osquery extension: " << extension << "\" ";
   argv_stream << "--socket \"" << extensions_socket << "\" ";

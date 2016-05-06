@@ -15,6 +15,7 @@
 #include <osquery/logger.h>
 
 #include "osquery/core/conversions.h"
+#include "osquery/core/process.h"
 
 #if 0
 #ifdef DLOG
@@ -125,11 +126,7 @@ void Dispatcher::stopServices() {
       }
       // We only need to check if std::terminate is called very quickly after
       // the std::thread is created.
-#ifdef WIN32
-      Sleep(20);
-#else
-      ::usleep(20);
-#endif
+      processSleep(20);
     }
     service->interrupt();
     DLOG(INFO) << "Service: " << &*service << " has been interrupted";

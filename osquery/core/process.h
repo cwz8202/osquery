@@ -13,6 +13,13 @@
 #include <memory>
 #include <string>
 
+#ifdef WIN32
+#define WINVER  0x0a00
+#define NOMINMAX
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#endif
+
 #include <boost/optional.hpp>
 
 #include <osquery/core.h>
@@ -20,6 +27,7 @@
 namespace osquery {
 
 #ifdef WIN32
+using pid_t = DWORD;
 using PlatformPidType = HANDLE;
 #else
 using PlatformPidType = pid_t;
@@ -34,7 +42,7 @@ enum ProcessState {
   PROCESS_STATE_CHANGE
 };
 
-class PlatformProcess {
+class PlatformProcess : private boost::noncopyable {
   public:
     explicit PlatformProcess(): id_(kInvalidPid) { }
     explicit PlatformProcess(PlatformPidType id);
@@ -47,10 +55,6 @@ class PlatformProcess {
 
     PlatformPidType nativeHandle() const { return id_; }
     
-    // TODO(#1991): Consider making kill() return an enumeration for more granularity if an
-    //              error happens to occur.
-    // TODO(#1991): Also, consider adding an argument for exit code so that clients can specificy
-    //               the process exit code for the terminating process.
     bool kill() const;
     
     bool isValid() const { return (id_ != kInvalidPid); }
@@ -59,17 +63,15 @@ class PlatformProcess {
     bool operator==(const PlatformProcess& process) const;
     bool operator!=(const PlatformProcess& process) const;
 
-    static std::shared_ptr<PlatformProcess> launchWorker(
-        const std::string& exec_path, const std::string& name);
-    static std::shared_ptr<PlatformProcess> launchExtension(
-        const std::string& exec_path,
-        const std::string& extension,
-        const std::string& extensions_socket,
-        const std::string& extensions_timeout,
-        const std::string& extensions_interval,
-        const std::string& verbose);
+    static std::shared_ptr<PlatformProcess> launchWorker(const std::string& exec_path, const std::string& name);
+    static std::shared_ptr<PlatformProcess> launchExtension(const std::string& exec_path,
+                                                            const std::string& extension,
+                                                            const std::string& extensions_socket,
+                                                            const std::string& extensions_timeout,
+                                                            const std::string& extensions_interval,
+                                                            const std::string& verbose);
 
-   private:
+   private: 
     PlatformPidType id_;
 };
 
@@ -87,11 +89,4 @@ ProcessState checkChildProcessStatus(const osquery::PlatformProcess& process, in
 void cleanupDefunctProcesses();
 
 void setToBackgroundPriority();
-
-// TODO(#1991): Missing register signal handlers function. Consider using an abstraction layer for 
-//              conforming POSIX and Windows callback functions. We should consider using a lambda
-//              function for a more cleaner design.
-// void registerExitHandlers(<func-ptr-type>); -- init.cpp:306
-
-// TODO(#1991): System logging?
 }

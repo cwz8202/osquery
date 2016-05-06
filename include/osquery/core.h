@@ -20,14 +20,6 @@
 
 #include <osquery/status.h>
 
-#ifdef WIN32
-#define WINVER  0x0a00
-#define NOMINMAX
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-using pid_t = DWORD; 
-#endif
-
 // clang-format off
 #ifndef STR
 #define STR_OF(x) #x
