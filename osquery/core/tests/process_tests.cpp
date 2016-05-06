@@ -119,7 +119,7 @@ TEST_F(ProcessTests, test_launchExtension) {
   {
     std::shared_ptr<osquery::PlatformProcess> process =
         osquery::PlatformProcess::launchExtension(self_exec_path,
-                                                  "extension-test",
+                                                  "exten\"sion-test",
                                                   "socket-name",
                                                   "100",
                                                   "5",
@@ -136,7 +136,7 @@ TEST_F(ProcessTests, test_launchWorker) {
   {
     std::shared_ptr<osquery::PlatformProcess> process = osquery::PlatformProcess::launchWorker(
       self_exec_path,
-      "worker-test"
+      "worker-\"test"
     );
     EXPECT_TRUE(process.get());
 

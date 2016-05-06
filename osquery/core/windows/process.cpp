@@ -14,10 +14,9 @@
 #include <signal.h>
 
 #include <sys/types.h>
+#include <boost/algorithm/string.hpp>
 
 #include "osquery/core/process.h"
-
-extern char **environ;
 
 namespace {
 osquery::PlatformPidType __declspec(nothrow) duplicateHandle(osquery::PlatformPidType src) {
@@ -65,7 +64,7 @@ bool PlatformProcess::operator!=(const PlatformProcess& process) const {
 }
 
 int PlatformProcess::pid() const {
-  return ::GetProcessId(id_);
+  return (int) ::GetProcessId(id_);
 }
 
 bool PlatformProcess::kill() const {
@@ -73,7 +72,7 @@ bool PlatformProcess::kill() const {
     return false;
   }
   
-  return ::TerminateProcess(id_, 0);
+  return (::TerminateProcess(id_, 0) != FALSE);
 }
 
 std::shared_ptr<PlatformProcess> PlatformProcess::launchWorker(const std::string& exec_path, const std::string& name) {
@@ -81,7 +80,7 @@ std::shared_ptr<PlatformProcess> PlatformProcess::launchWorker(const std::string
   ::PROCESS_INFORMATION pi = { 0 };
   
   si.cb = sizeof(si);
-  
+
   std::stringstream handle_stream;
 
   // The HANDLE exposed to the child process is currently limited to only having SYNCHRONIZE and PROCESS_QUERY_LIMITED_INFORMATION 
@@ -111,10 +110,14 @@ std::shared_ptr<PlatformProcess> PlatformProcess::launchWorker(const std::string
     return std::shared_ptr<PlatformProcess>();
   }
   
+  // Since Windows does not accept a char * array for arguments, we have to build one as a string. Therefore, we
+  // need to make sure that special characters are not present that would obstruct the parsing of arguments. For
+  // now, we strip out all double quotes.
+  //
   // We don't directly use argv.c_str() as the value for lpCommandLine in CreateProcess since
   // that argument requires a modifiable buffer. So, instead, we off-load the contents of argv
   // into a vector which will have its backing memory as modifiable.
-  auto argv = std::string("\"") + name + "\"";
+  auto argv = std::string("\"") + boost::replace_all_copy(name, "\" ", " ") + "\"";
   std::vector<char> mutable_argv(argv.begin(), argv.end());
   mutable_argv.push_back('\0');
   
@@ -154,8 +157,10 @@ std::shared_ptr<PlatformProcess> PlatformProcess::launchExtension(const std::str
   
   si.cb = sizeof(si);
   
+  // To prevent errant double quotes from altering the intended arguments for argv, we strip
+  // them out completely.
   std::stringstream argv_stream;
-  argv_stream << "\"osquery extension: " << extension << "\" ";
+  argv_stream << "\"osquery extension: " << boost::replace_all_copy(extension, "\"", "") << "\" ";
   argv_stream << "--socket \"" << extensions_socket << "\" ";
   argv_stream << "--timeout " << extensions_timeout << " ";
   argv_stream << "--interval " << extensions_interval << " ";
