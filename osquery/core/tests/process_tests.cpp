@@ -119,7 +119,7 @@ TEST_F(ProcessTests, test_launchExtension) {
   {
     std::shared_ptr<osquery::PlatformProcess> process =
         osquery::PlatformProcess::launchExtension(self_exec_path,
-                                                  "exten\"sion-test",
+                                                  "extension-test",
                                                   "socket-name",
                                                   "100",
                                                   "5",
@@ -136,7 +136,7 @@ TEST_F(ProcessTests, test_launchWorker) {
   {
     std::shared_ptr<osquery::PlatformProcess> process = osquery::PlatformProcess::launchWorker(
       self_exec_path,
-      "worker-\"test"
+      "worker-test"
     );
     EXPECT_TRUE(process.get());
 
@@ -145,4 +145,37 @@ TEST_F(ProcessTests, test_launchWorker) {
     EXPECT_EQ(code, WORKER_SUCCESS_CODE);
   }
 }
+
+#ifdef WIN32
+TEST_F(ProcessTests, test_launchExtensionQuotes) {
+  {
+    std::shared_ptr<osquery::PlatformProcess> process =
+      osquery::PlatformProcess::launchExtension(self_exec_path,
+        "exten\"sion-te\"st",
+        "socket-name",
+        "100",
+        "5",
+        "true");
+    EXPECT_TRUE(process.get());
+
+    int code = 0;
+    EXPECT_TRUE(getProcessExitCode(*process, code));
+    EXPECT_EQ(code, EXTENSION_SUCCESS_CODE);
+  }
+}
+
+TEST_F(ProcessTests, test_launchWorkerQuotes) {
+  {
+    std::shared_ptr<osquery::PlatformProcess> process = osquery::PlatformProcess::launchWorker(
+      self_exec_path,
+      "worker\"-test"
+    );
+    EXPECT_TRUE(process.get());
+
+    int code = 0;
+    EXPECT_TRUE(getProcessExitCode(*process, code));
+    EXPECT_EQ(code, WORKER_SUCCESS_CODE);
+  }
+}
+#endif
 }
