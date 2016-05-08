@@ -65,14 +65,12 @@ elseif(FREEBSD)
 endif()
 
 # Add default linking details (the first argument means SDK + core).
-if(NOT WIN32)
-  ADD_OSQUERY_LINK_CORE("-rdynamic")
-  foreach(DISTRO ${OSQUERY_REQUIRE_RUNTIMES})
-    if(${OSQUERY_BUILD_DISTRO} STREQUAL ${DISTRO})
-      ADD_OSQUERY_LINK_ADDITIONAL("-static-libstdc++")
-    endif()
-  endforeach()
-endif()
+ADD_OSQUERY_LINK_CORE("-rdynamic")
+foreach(DISTRO ${OSQUERY_REQUIRE_RUNTIMES})
+  if(${OSQUERY_BUILD_DISTRO} STREQUAL ${DISTRO})
+    ADD_OSQUERY_LINK_ADDITIONAL("-static-libstdc++")
+  endif()
+endforeach()
 
 # The platform-specific SDK + core libraries.
 if(APPLE)

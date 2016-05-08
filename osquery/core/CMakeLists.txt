@@ -1,14 +1,9 @@
 if(WIN32)
-  set (OS_CORE_SOURCE
-    windows/process.cpp
-    windows/process_ops.cpp  
-  )
+  set(PROCESS_FAMILY "windows")
 else()
-  set (OS_CORE_SOURCE
-    posix/process.cpp
-    posix/process_ops.cpp
-  )
+  set(PROCESS_FAMILY "posix")
 endif()
+file(GLOB OS_CORE_SOURCE "${PROCESS_FAMILY}/*.cpp")
 
 if(APPLE)
   set (OS_CORE_SOURCE
