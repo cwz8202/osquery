@@ -394,7 +394,6 @@ if(WIN32)
   # Win64 specific boost
   set(boost_filesystem_library "${BOOST_DEP_DIR}/lib64-msvc-14.0/libboost_filesystem-vc140-mt-1_59.lib")
   set(boost_system_library "${BOOST_DEP_DIR}/lib64-msvc-14.0/libboost_system-vc140-mt-1_59.lib")
-  set(boost_thread_library "${BOOST_DEP_DIR}/lib64-msvc-14.0/libboost_thread-vc140-mt-1_59.lib")
   set(boost_regex_library "${BOOST_DEP_DIR}/lib64-msvc-14.0/libboost_regex-vc140-mt-1_59.lib")
 
   # Win64 specific gflags
