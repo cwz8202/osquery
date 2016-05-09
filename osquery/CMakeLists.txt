@@ -29,9 +29,7 @@ else()
 endif()
 
 if(WIN32)
-  set(OS_CORE_LIBS
-    ${boost_thread_library}
-  )
+  set(OS_CORE_LIBS "")
 else()
   set(OS_CORE_LIBS
     pthread
