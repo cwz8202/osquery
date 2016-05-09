@@ -123,7 +123,5 @@ ProcessState checkChildProcessStatus(const PlatformProcess& process,
   return PROCESS_EXITED;
 }
 
-void setToBackgroundPriority() {
-  // TODO(#1991): Look up SetPriorityClass and considering implementing it...
-}
+void setToBackgroundPriority() { }
 }

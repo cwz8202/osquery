@@ -479,7 +479,7 @@ void Initializer::initActivePlugin(const std::string& type,
     }
     // The plugin is not local and is not active, wait and retry.
     delay += kExtensionInitializeLatencyUS;
-    processSleep(kExtensionInitializeLatencyUS);
+    sleepFor(kExtensionInitializeLatencyUS);
   } while (delay < timeout);
 
   LOG(ERROR) << "Cannot activate " << name << " " << type

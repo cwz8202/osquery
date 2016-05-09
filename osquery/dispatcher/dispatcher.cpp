@@ -126,7 +126,7 @@ void Dispatcher::stopServices() {
       }
       // We only need to check if std::terminate is called very quickly after
       // the std::thread is created.
-      processSleep(20);
+      sleepFor(20);
     }
     service->interrupt();
     DLOG(INFO) << "Service: " << &*service << " has been interrupted";
