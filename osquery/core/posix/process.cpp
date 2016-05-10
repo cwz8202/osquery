@@ -43,9 +43,19 @@ bool PlatformProcess::kill() const {
   if (id_ == kInvalidPid) {
     return false;
   }
-  
+
   int status = ::kill(id_, SIGKILL);
   return (status == 0);
+}
+
+std::shared_ptr<PlatformProcess> PlatformProcess::getCurrentProcess() {
+  pid_t pid = ::getpid();
+  return std::make_shared<PlatformProcess>(pid);
+}
+
+std::shared_ptr<PlatformProcess> PlatformProcess::getLauncherProcess() {
+  pid_t ppid = ::getppid();
+  return std::make_shared<PlatformProcess>(ppid);
 }
 
 std::shared_ptr<PlatformProcess> PlatformProcess::launchWorker(const std::string& exec_path, const std::string& name) {

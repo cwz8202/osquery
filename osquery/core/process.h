@@ -89,6 +89,12 @@ class PlatformProcess : private boost::noncopyable {
     /// Returns whether the PlatformProcess object is valid
     bool isValid() const { return (id_ != kInvalidPid); }
 
+    /// Returns the current process
+    static std::shared_ptr<PlatformProcess> getCurrentProcess();
+
+    /// Returns the launcher process (only works for worker processes)
+    static std::shared_ptr<PlatformProcess> getLauncherProcess();
+
     /**
      * @brief Creates a new worker process.
      *
@@ -114,12 +120,6 @@ class PlatformProcess : private boost::noncopyable {
     /// "Handle" of the process. On Windows, this will be a HANDLE. On POSIX systems, this will be a pid_t.
     PlatformPidType id_;
 };
-
-/// Returns the current process
-std::shared_ptr<PlatformProcess> getCurrentProcess();
-
-/// Returns the launcher process (only works for worker processes)
-std::shared_ptr<PlatformProcess> getLauncherProcess();
 
 /// Causes the current thread to sleep for a specified time in milliseconds
 void sleepFor(unsigned int msec);

@@ -23,16 +23,6 @@
 
 namespace osquery {
 
-std::shared_ptr<PlatformProcess> getCurrentProcess() {
-  pid_t pid = ::getpid();
-  return std::make_shared<PlatformProcess>(pid);
-}
-
-std::shared_ptr<PlatformProcess> getLauncherProcess() {
-  pid_t ppid = ::getppid();
-  return std::make_shared<PlatformProcess>(ppid);
-}
-
 bool isLauncherProcessDead(PlatformProcess& launcher) {
   if (!launcher.isValid()) {
     return false;

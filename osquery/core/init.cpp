@@ -328,7 +328,8 @@ Initializer::Initializer(int& argc, char**& argv, ToolType tool)
   initStatusLogger(binary_);
   if (tool != OSQUERY_EXTENSION) {
     if (isWorker()) {
-      VLOG(1) << "osquery worker initialized [watcher=" << getLauncherProcess()->pid() << "]";
+      VLOG(1) << "osquery worker initialized [watcher="
+              << PlatformProcess::getLauncherProcess()->pid() << "]";
     } else {
       VLOG(1) << "osquery initialized [version=" << kVersion << "]";
     }
@@ -440,7 +441,7 @@ void Initializer::initWorker(const std::string& name) const {
 
   // Start a 'watcher watcher' thread to exit the process if the watcher exits.
   // In this case the parent process is called the 'watcher' process.
-  Dispatcher::addService(std::make_shared<WatcherWatcherRunner>(getLauncherProcess()));
+  Dispatcher::addService(std::make_shared<WatcherWatcherRunner>(PlatformProcess::getLauncherProcess()));
 }
 
 void Initializer::initWorkerWatcher(const std::string& name) const {

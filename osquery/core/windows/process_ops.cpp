@@ -17,46 +17,7 @@
 
 namespace osquery {
 
-std::shared_ptr<PlatformProcess> getCurrentProcess() {
-  HANDLE handle =
-      ::OpenProcess(PROCESS_ALL_ACCESS, FALSE, ::GetCurrentProcessId());
-  if (handle == NULL) {
-    return std::shared_ptr<PlatformProcess>();
-  }
-
-  auto process = std::make_shared<PlatformProcess>(handle);
-  return process;
-}
-
-std::shared_ptr<PlatformProcess> getLauncherProcess() {
-  auto launcher_handle = getEnvVar("OSQUERY_LAUNCHER");
-  if (!launcher_handle) {
-    return std::shared_ptr<PlatformProcess>();
-  }
-
-  // Convert the environment variable into a HANDLE (the value from environment
-  // variable should be a hex value). As a precaution, ensure that the HANDLE is
-  // valid.
-  HANDLE handle = INVALID_HANDLE_VALUE;
-
-  try {
-    handle = reinterpret_cast<HANDLE>(static_cast<std::uintptr_t>(
-        std::stoull(*launcher_handle, nullptr, 16)));
-  } catch (std::invalid_argument e) {
-    return std::shared_ptr<PlatformProcess>();
-  } catch (std::out_of_range e) {
-    return std::shared_ptr<PlatformProcess>();
-  }
-
-  if (handle == NULL || handle == INVALID_HANDLE_VALUE) {
-    return std::shared_ptr<PlatformProcess>();
-  }
-
-  auto launcher = std::make_shared<PlatformProcess>(handle);
-  return launcher;
-}
-
-bool isLauncherProcessDead(PlatformProcess& launcher) {
+bool isLauncherProcessDead(PlatformProcess &launcher) {
   DWORD code = 0;
   if (!::GetExitCodeProcess(launcher.nativeHandle(), &code)) {
     // TODO(#1991): If an error occurs with GetExitCodeProcess, do we want to
@@ -67,15 +28,15 @@ bool isLauncherProcessDead(PlatformProcess& launcher) {
   return (code != STILL_ACTIVE);
 }
 
-bool setEnvVar(const std::string& name, const std::string& value) {
+bool setEnvVar(const std::string &name, const std::string &value) {
   return (::SetEnvironmentVariableA(name.c_str(), value.c_str()) == TRUE);
 }
 
-bool unsetEnvVar(const std::string& name) {
+bool unsetEnvVar(const std::string &name) {
   return (::SetEnvironmentVariableA(name.c_str(), NULL) == TRUE);
 }
 
-boost::optional<std::string> getEnvVar(const std::string& name) {
+boost::optional<std::string> getEnvVar(const std::string &name) {
   const int kInitialBufferSize = 1024;
   std::vector<char> buf;
   buf.assign(kInitialBufferSize, '\0');
@@ -108,8 +69,8 @@ boost::optional<std::string> getEnvVar(const std::string& name) {
 
 void cleanupDefunctProcesses() {}
 
-ProcessState checkChildProcessStatus(const PlatformProcess& process,
-                                     int& status) {
+ProcessState checkChildProcessStatus(const PlatformProcess &process,
+                                     int &status) {
   DWORD exit_code = 0;
   if (!::GetExitCodeProcess(process.nativeHandle(), &exit_code)) {
     return PROCESS_ERROR;
@@ -123,5 +84,5 @@ ProcessState checkChildProcessStatus(const PlatformProcess& process,
   return PROCESS_EXITED;
 }
 
-void setToBackgroundPriority() { }
+void setToBackgroundPriority() {}
 }

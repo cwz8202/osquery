@@ -24,10 +24,6 @@
 
 #include "osquery/core/process.h"
 
-// These codes are specifically for process abstraction testing
-#define EXTENSION_SUCCESS_CODE  0x45
-#define WORKER_SUCCESS_CODE     0x57
-
 namespace pt = boost::property_tree;
 
 namespace osquery {
