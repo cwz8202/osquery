@@ -68,7 +68,6 @@ enum {
 };
 #endif
 
-// TODO(#2001): We need to decide upon a default OSQUERY_HOME for Windows
 #ifdef __linux__
 #define OSQUERY_HOME "/etc/osquery"
 #else
@@ -284,26 +283,20 @@ Initializer::Initializer(int& argc, char**& argv, ToolType tool)
     if (osquery::pathExists(homedir).ok() ||
         boost::filesystem::create_directory(homedir, ec)) {
       // Only apply user/shell-specific paths if not overridden by CLI flag.
-      if (Flag::isDefault("database_path")) {
-        // TODO(#2001): the path should be built in a more angostic way 
+      if (Flag::isDefault("database_path")) { 
         osquery::FLAGS_database_path = homedir + "/shell.db";
       }
       if (Flag::isDefault("extensions_socket")) {
-        // TODO(#2001): the path should be built in a more angostic way
         osquery::FLAGS_extensions_socket = homedir + "/shell.em";
       }
     } else {
       LOG(INFO) << "Cannot access or create osquery home directory";
       FLAGS_disable_extensions = true;
-      // TODO(#2001): the path should be set in a more angostic way
       FLAGS_database_path = "/dev/null";
     }
   }
 
 #ifndef WIN32
-  // TODO(#1991): Think about making this into registerHandlers() within
-  //              our process abstraction
-  //
   // All tools handle the same set of signals.
   // If a daemon process is a watchdog the signal is passed to the worker,
   // unless the worker has not yet started.
