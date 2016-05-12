@@ -105,16 +105,20 @@ TEST_F(ProcessTests, test_getpid) {
 TEST_F(ProcessTests, test_envVar) {
   auto val = getEnvVar("GTEST_OSQUERY");
   EXPECT_FALSE(val);
+  EXPECT_FALSE(val.is_initialized());
 
   EXPECT_TRUE(setEnvVar("GTEST_OSQUERY", "true"));
 
   val = getEnvVar("GTEST_OSQUERY");
+  EXPECT_FALSE(!val);
+  EXPECT_TRUE(val.is_initialized());
   EXPECT_EQ(*val, "true");
 
   EXPECT_TRUE(unsetEnvVar("GTEST_OSQUERY"));
 
   val = getEnvVar("GTEST_OSQUERY");
   EXPECT_FALSE(val);
+  EXPECT_FALSE(val.is_initialized());
 }
 
 TEST_F(ProcessTests, test_launchExtension) {
