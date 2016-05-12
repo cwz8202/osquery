@@ -101,7 +101,7 @@ PerformanceState& Watcher::getState(const std::string& extension) {
   return instance().extension_states_[extension];
 }
 
-void Watcher::setExtension(const std::string& extension, std::shared_ptr<PlatformProcess> child) {
+void Watcher::setExtension(const std::string& extension, const std::shared_ptr<PlatformProcess>& child) {
   WatcherLocker locker;
   instance().extensions_[extension] = child;
 }
@@ -355,8 +355,8 @@ void WatcherRunner::createWorker() {
     return;
   }
 
-  std::shared_ptr<PlatformProcess> worker = PlatformProcess::launchWorker(exec_path.string(), argv_[0]);
-  if (!worker) {
+  auto worker = PlatformProcess::launchWorker(exec_path.string(), argv_[0]);
+  if (worker.get() == nullptr) {
     // Unrecoverable error, cannot create a worker process.
     LOG(ERROR) << "osqueryd could not create a worker process";
     Initializer::shutdown(EXIT_FAILURE);
@@ -390,14 +390,14 @@ bool WatcherRunner::createExtension(const std::string& extension) {
     return false;
   }
 
-  std::shared_ptr<PlatformProcess> ext_process =
+  auto ext_process =
       PlatformProcess::launchExtension(exec_path.string(),
                                        extension,
                                        Flag::getValue("extensions_socket"),
                                        Flag::getValue("extensions_timeout"),
                                        Flag::getValue("extensions_interval"),
                                        Flag::getValue("verbose"));
-  if (!ext_process) {
+  if (ext_process.get() == nullptr) {
     // Unrecoverable error, cannot create an extension process.
     LOG(ERROR) << "Cannot create extension process: " << extension;
     Initializer::shutdown(EXIT_FAILURE);
