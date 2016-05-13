@@ -109,12 +109,13 @@ std::shared_ptr<PlatformProcess> PlatformProcess::getLauncherProcess() {
 
 std::shared_ptr<PlatformProcess>
 PlatformProcess::launchWorker(const std::string &exec_path,
-                              const std::string &name) {
+                              int argc, char **argv) {
   ::STARTUPINFOA si = {0};
   ::PROCESS_INFORMATION pi = {0};
 
   si.cb = sizeof(si);
 
+  std::stringstream argv_stream;
   std::stringstream handle_stream;
 
   // The HANDLE exposed to the child process is currently limited to only having
@@ -151,15 +152,29 @@ PlatformProcess::launchWorker(const std::string &exec_path,
   // Since Windows does not accept a char * array for arguments, we have to
   // build one as a string. Therefore, we need to make sure that special
   // characters are not present that would obstruct the parsing of arguments.
-  // For now, we strip out all double quotes.
+  // For now, we strip out all double quotes. If the an entry in argv has
+  // spaces, we will put double-quotes around the entry.
+  //
+  // NOTE: This is extremely naive and will break the moment complexities are
+  //       involved... Windows command line argument parsing is extremely
+  //       nitpicky and is different in behavior than POSIX argv parsing.
   //
   // We don't directly use argv.c_str() as the value for lpCommandLine in
   // CreateProcess since that argument requires a modifiable buffer. So,
   // instead, we off-load the contents of argv into a vector which will have its
   // backing memory as modifiable.
-  auto argv =
-      std::string("\"") + boost::replace_all_copy(name, "\" ", " ") + "\"";
-  std::vector<char> mutable_argv(argv.begin(), argv.end());
+  for (size_t i = 0; i < argc; i++) {
+    std::string component(argv[i]);
+    if (component.find(" ") != std::string::npos) {
+      boost::replace_all(component, "\"", "\\\"");
+      argv_stream << "\"" << component << "\" ";
+    } else {
+      argv_stream << component << " ";
+    }
+  }
+
+  std::string cmdline = argv_stream.str();
+  std::vector<char> mutable_argv(cmdline.begin(), cmdline.end());
   mutable_argv.push_back('\0');
 
   BOOL status = ::CreateProcessA(exec_path.c_str(), &mutable_argv[0], NULL,

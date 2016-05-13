@@ -346,7 +346,7 @@ void WatcherRunner::createWorker() {
     return;
   }
 
-  auto worker = PlatformProcess::launchWorker(exec_path.string(), argv_[0]);
+  auto worker = PlatformProcess::launchWorker(exec_path.string(), argc_, argv_);
   if (worker == nullptr) {
     // Unrecoverable error, cannot create a worker process.
     LOG(ERROR) << "osqueryd could not create a worker process";

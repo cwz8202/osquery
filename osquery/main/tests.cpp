@@ -35,7 +35,8 @@ std::string kProcessTestExecPath;
 const char *kOsqueryTestModuleName = "osquery_tests.exe";
 
 /// These are the expected arguments for our test worker process.
-const char *kExpectedWorkerArgs[] = {"worker-test"};
+const char *kExpectedWorkerArgs[] = {"worker-test", "--socket", "fake-socket", nullptr};
+const int kExpectedWorkerArgsCount = (sizeof(osquery::kExpectedWorkerArgs) / sizeof(char *)) - 1;
 
 /// These are the expected arguments for our test extensions process.
 const char *kExpectedExtensionArgs[] = {"osquery extension: extension-test",
@@ -45,7 +46,9 @@ const char *kExpectedExtensionArgs[] = {"osquery extension: extension-test",
                                         "100",
                                         "--interval",
                                         "5",
-                                        "--verbose"};
+                                        "--verbose",
+                                        nullptr};
+const int kExpectedExtensionArgsCount = (sizeof(osquery::kExpectedExtensionArgs) / sizeof(char *)) - 1;
 
 static bool compareArguments(char *result[], unsigned int result_nelms,
                              const char *expected[],
@@ -69,9 +72,7 @@ static bool compareArguments(char *result[], unsigned int result_nelms,
 }
 
 int workerMain(int argc, char *argv[]) {
-  if (!osquery::compareArguments(argv, argc, osquery::kExpectedWorkerArgs,
-                                 sizeof(osquery::kExpectedWorkerArgs) /
-                                     sizeof(const char *))) {
+  if (!osquery::compareArguments(argv, argc, osquery::kExpectedWorkerArgs, osquery::kExpectedWorkerArgsCount)) {
     return ERROR_COMPARE_ARGUMENT;
   }
 
@@ -104,9 +105,7 @@ int workerMain(int argc, char *argv[]) {
 }
 
 int extensionMain(int argc, char *argv[]) {
-  if (!osquery::compareArguments(argv, argc, osquery::kExpectedExtensionArgs,
-                                 sizeof(osquery::kExpectedExtensionArgs) /
-                                     sizeof(const char *))) {
+  if (!osquery::compareArguments(argv, argc, osquery::kExpectedExtensionArgs, osquery::kExpectedExtensionArgsCount)) {
     return ERROR_COMPARE_ARGUMENT;
   }
   return EXTENSION_SUCCESS_CODE;
