@@ -74,7 +74,7 @@ std::shared_ptr<PlatformProcess> PlatformProcess::getCurrentProcess() {
   HANDLE handle =
       ::OpenProcess(PROCESS_ALL_ACCESS, FALSE, ::GetCurrentProcessId());
   if (handle == NULL) {
-    return std::shared_ptr<PlatformProcess>();
+    return std::make_shared<PlatformProcess>();
   }
 
   return std::make_shared<PlatformProcess>(handle);
@@ -83,7 +83,7 @@ std::shared_ptr<PlatformProcess> PlatformProcess::getCurrentProcess() {
 std::shared_ptr<PlatformProcess> PlatformProcess::getLauncherProcess() {
   auto launcher_handle = getEnvVar("OSQUERY_LAUNCHER");
   if (!launcher_handle) {
-    return std::shared_ptr<PlatformProcess>();
+    return std::make_shared<PlatformProcess>();
   }
 
   // Convert the environment variable into a HANDLE (the value from environment
@@ -95,13 +95,13 @@ std::shared_ptr<PlatformProcess> PlatformProcess::getLauncherProcess() {
     handle = reinterpret_cast<HANDLE>(static_cast<std::uintptr_t>(
         std::stoull(*launcher_handle, nullptr, 16)));
   } catch (std::invalid_argument e) {
-    return std::shared_ptr<PlatformProcess>();
+    return std::make_shared<PlatformProcess>();
   } catch (std::out_of_range e) {
-    return std::shared_ptr<PlatformProcess>();
+    return std::make_shared<PlatformProcess>();
   }
 
   if (handle == NULL || handle == INVALID_HANDLE_VALUE) {
-    return std::shared_ptr<PlatformProcess>();
+    return std::make_shared<PlatformProcess>();
   }
 
   return std::make_shared<PlatformProcess>(handle);
