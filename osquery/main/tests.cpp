@@ -36,7 +36,7 @@ const char *kOsqueryTestModuleName = "osquery_tests.exe";
 
 /// These are the expected arguments for our test worker process.
 const char *kExpectedWorkerArgs[] = {"worker-test", "--socket", "fake-socket", nullptr};
-const int kExpectedWorkerArgsCount = (sizeof(osquery::kExpectedWorkerArgs) / sizeof(char *)) - 1;
+const size_t kExpectedWorkerArgsCount = (sizeof(osquery::kExpectedWorkerArgs) / sizeof(char *)) - 1;
 
 /// These are the expected arguments for our test extensions process.
 const char *kExpectedExtensionArgs[] = {"osquery extension: extension-test",
@@ -48,7 +48,7 @@ const char *kExpectedExtensionArgs[] = {"osquery extension: extension-test",
                                         "5",
                                         "--verbose",
                                         nullptr};
-const int kExpectedExtensionArgsCount = (sizeof(osquery::kExpectedExtensionArgs) / sizeof(char *)) - 1;
+const size_t kExpectedExtensionArgsCount = (sizeof(osquery::kExpectedExtensionArgs) / sizeof(char *)) - 1;
 
 static bool compareArguments(char *result[], unsigned int result_nelms,
                              const char *expected[],

@@ -34,9 +34,9 @@ extern const char *kOsqueryTestModuleName;
 
 /// These are the expected arguments for our test worker process.
 extern const char *kExpectedWorkerArgs[];
-extern const int kExpectedWorkerArgsCount;
+extern const size_t kExpectedWorkerArgsCount;
 
 /// These are the expected arguments for our test extensions process.
 extern const char *kExpectedExtensionArgs[];
-extern const int kExpectedExtensionArgsCount;
+extern const size_t kExpectedExtensionArgsCount;
 }
